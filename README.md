@@ -122,16 +122,25 @@ npx tsc --noEmit
 npm test
 ```
 
-### Step 4: Start the Expo Development Server
+### Step 4: Start the Expo Development Server (Use `--tunnel`)
+
+> [!IMPORTANT]
+> **Use `--tunnel` mode to connect phones**: Most Wi-Fi routers (due to AP/client isolation or local firewall rules) block direct local LAN traffic (`192.168.x.x:8081`). **Only `--tunnel` mode connects reliably across phones and computers.**
+>
+> `npm start` is configured to run with `--tunnel` by default:
+
 ```bash
 npm start
-# or
-npx expo start
+# or explicitly:
+npx expo start --tunnel
 ```
-From the interactive terminal menu:
-- Press `i` to launch in the iOS Simulator (macOS with Xcode required).
-- Press `a` to launch in the Android Emulator (Android Studio required).
-- Scan the displayed QR code with the Expo Go app on your physical mobile device.
+
+From the interactive terminal:
+- **Physical Phone (iOS / Android)**: Open Expo Go and scan the QR code (or camera app on iOS). It connects over an HTTPS tunnel seamlessly regardless of network isolation.
+- Press `w` to open in your desktop web browser.
+- Press `i` to launch in the iOS Simulator (macOS with Xcode).
+- Press `a` to launch in the Android Emulator (Android Studio).
+- If you specifically need local LAN only: `npm run start:lan` (or `npx expo start --lan`).
 
 ---
 
