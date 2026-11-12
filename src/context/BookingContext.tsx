@@ -282,7 +282,7 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
     showToast(`Cleared seat assignment for ${pax?.name || 'passenger'}`, 'info');
   };
 
-  // Meal selection action
+  // Meal selection action (manual passenger selection: does not auto-switch traveler)
   const selectMeal = (mealId: string, passengerId: string = activePassenger.id) => {
     const meal = MEAL_OPTIONS.find((m) => m.id === mealId) || MEAL_OPTIONS[0];
 
@@ -294,14 +294,6 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
     const pax = validPassengers.find((p) => p.id === passengerId);
     const priceText = meal.price === 0 ? 'Free' : `₹${meal.price}`;
     showToast(`Selected ${meal.name} (${priceText}) for ${pax?.name || 'passenger'}`, 'success');
-
-    // Optional auto-switch to next passenger without meal selection
-    const nextPaxWithoutMeal = validPassengers.find(
-      (p) => p.id !== passengerId && (!mealSelections[p.id] || mealSelections[p.id] === 'meal-none')
-    );
-    if (nextPaxWithoutMeal && mealId !== 'meal-none') {
-      setActivePassengerIdState(nextPaxWithoutMeal.id);
-    }
   };
 
   const updatePassengerName = (passengerId: string, newName: string) => {
@@ -508,6 +500,11 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
         }
         return false;
       }
+    }
+
+    // When transitioning into meals section, default to the first passenger
+    if (targetStep === 'meals' && validPassengers.length > 0) {
+      setActivePassengerIdState(validPassengers[0].id);
     }
 
     setCurrentStepState(targetStep);

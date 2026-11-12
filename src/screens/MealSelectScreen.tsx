@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import {
   Utensils,
@@ -20,11 +20,18 @@ export const MealSelectScreen: React.FC = () => {
     setActivePassengerId,
     selectMeal,
     state,
-    passengerSummaries,
   } = useBooking();
 
   const { mealSelections } = state;
   const currentMealId = mealSelections[activePassenger.id] || 'meal-none';
+  const activeMeal = MEAL_OPTIONS.find((m) => m.id === currentMealId) || MEAL_OPTIONS[0];
+
+  // Default to the first passenger upon entering the meals screen
+  useEffect(() => {
+    if (validPassengers.length > 0) {
+      setActivePassengerId(validPassengers[0].id);
+    }
+  }, []);
 
   const getDietaryIcon = (meal: MealOption) => {
     switch (meal.id) {
@@ -51,7 +58,7 @@ export const MealSelectScreen: React.FC = () => {
     >
       {/* Traveler Selector Strip */}
       <View style={styles.travelerHeader}>
-        <Text style={styles.sectionTitle}>SELECTING MEAL FOR</Text>
+        <Text style={styles.sectionTitle}>SELECT TRAVELER TO ASSIGN MEAL</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -59,8 +66,8 @@ export const MealSelectScreen: React.FC = () => {
         >
           {validPassengers.map((pax) => {
             const isActive = pax.id === activePassenger.id;
-            const paxSummary = passengerSummaries.find((s) => s.passenger.id === pax.id);
-            const selectedMeal = paxSummary?.meal;
+            const paxMealId = mealSelections[pax.id] || 'meal-none';
+            const paxMeal = MEAL_OPTIONS.find((m) => m.id === paxMealId) || MEAL_OPTIONS[0];
 
             return (
               <TouchableOpacity
@@ -84,24 +91,43 @@ export const MealSelectScreen: React.FC = () => {
                   <Text style={[styles.paxChipName, isActive && styles.paxChipNameActive]}>
                     {pax.name.split(' ')[0]}
                   </Text>
-                  <Text style={styles.paxChipMeal} numberOfLines={1}>
-                    {selectedMeal?.price === 0 ? 'No meal' : selectedMeal?.name.replace(' Meal', '')}
+                  <Text style={[styles.paxChipMeal, isActive && styles.paxChipMealActive]} numberOfLines={1}>
+                    {paxMeal.price === 0 ? 'No meal' : `${paxMeal.name.replace(' Meal', '')} (₹${paxMeal.price})`}
                   </Text>
                 </View>
+
+                {isActive && (
+                  <View style={styles.activeDot} />
+                )}
               </TouchableOpacity>
             );
           })}
         </ScrollView>
       </View>
 
-      {/* Menu Header Card */}
+      {/* Active Traveler Dining Header Card */}
       <View style={styles.menuNoticeCard}>
-        <Text style={styles.menuNoticeTitle}>
-          Dining Options for {activePassenger.name}
-        </Text>
-        <Text style={styles.menuNoticeSub}>
-          Pre-ordered meals are served hot with beverage service after departure.
-        </Text>
+        <View style={styles.menuNoticeTop}>
+          <View style={styles.menuNoticeLeft}>
+            <Text style={styles.menuNoticeSubtitle}>SELECTING DINING FOR</Text>
+            <Text style={styles.menuNoticeTitle}>
+              {activePassenger.name}
+            </Text>
+          </View>
+          <View style={[styles.activeStatusPill, activeMeal.price > 0 && styles.activeStatusPillPaid]}>
+            <Check size={11} color={activeMeal.price > 0 ? '#1D4ED8' : '#059669'} strokeWidth={3} />
+            <Text style={[styles.activeStatusText, activeMeal.price > 0 && styles.activeStatusTextPaid]}>
+              {activeMeal.price === 0 ? 'Complimentary' : `₹${activeMeal.price}`}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.selectedMealSummaryRow}>
+          <Text style={styles.selectedMealSummaryLabel}>Current Meal:</Text>
+          <Text style={styles.selectedMealSummaryName}>
+            {activeMeal.name}
+          </Text>
+        </View>
       </View>
 
       {/* Meal Option Cards */}
@@ -138,6 +164,17 @@ export const MealSelectScreen: React.FC = () => {
                     )}
                   </View>
                   <Text style={styles.mealDesc}>{meal.description}</Text>
+
+                  {isSelected && (
+                    <View style={styles.selectedBadgeRow}>
+                      <View style={styles.selectedPillBadge}>
+                        <Check size={10} color="#FFFFFF" strokeWidth={3} />
+                        <Text style={styles.selectedPillText}>
+                          Selected for {activePassenger.name.split(' ')[0]}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
                 </View>
 
                 <View style={styles.priceCol}>
@@ -232,18 +269,87 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 1,
   },
+  paxChipMealActive: {
+    color: '#2563EB',
+    fontWeight: '700',
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#2563EB',
+    marginLeft: 4,
+  },
   menuNoticeCard: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
     padding: 12,
     marginBottom: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
+  menuNoticeTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  menuNoticeLeft: {
+    flex: 1,
+    marginRight: 8,
+  },
+  menuNoticeSubtitle: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.6,
+  },
   menuNoticeTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
+    marginTop: 1,
+  },
+  activeStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  activeStatusPillPaid: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+  },
+  activeStatusText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#059669',
+    marginLeft: 4,
+  },
+  activeStatusTextPaid: {
+    color: '#1D4ED8',
+  },
+  selectedMealSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  selectedMealSummaryLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#64748B',
+  },
+  selectedMealSummaryName: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginLeft: 6,
   },
   menuNoticeSub: {
     fontSize: 11,
@@ -325,6 +431,24 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 3,
     lineHeight: 15,
+  },
+  selectedBadgeRow: {
+    marginTop: 6,
+  },
+  selectedPillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  selectedPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginLeft: 4,
   },
   priceCol: {
     alignItems: 'flex-end',
