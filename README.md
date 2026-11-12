@@ -140,24 +140,6 @@ From the interactive terminal:
 
 ---
 
-### Troubleshooting Connection Issues
-
-If Expo Go shows *"There was a problem running the requested project. The network connection was lost"*:
-
-1. **macOS Firewall Blocking Node (macOS Sonoma / Sequoia)**:
-   - Go to **System Settings → Network → Firewall → Options...**
-   - Locate `node` in the list and set it to **"Allow incoming connections"**.
-2. **iOS Local Network Permission**:
-   - On your iPhone, open **Settings → Privacy & Security → Local Network**.
-   - Ensure the toggle next to **Expo Go** is turned **ON**.
-3. **Restricted Wi-Fi / Router Isolation**:
-   - If your home or office Wi-Fi isolates devices, bypass it entirely using tunnel mode:
-     ```bash
-     npm run tunnel
-     ```
-
----
-
 ## 6. Architecture & State Management
 
 The application state is managed by `BookingContext`:
