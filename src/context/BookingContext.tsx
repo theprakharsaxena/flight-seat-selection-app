@@ -47,6 +47,7 @@ interface BookingContextType {
   selectSeat: (seatId: string) => { success: boolean; message: string };
   removeSeat: (passengerId?: string) => void;
   selectMeal: (mealId: string, passengerId?: string) => void;
+  resetBooking: () => void;
   showToast: (message: string, type?: 'info' | 'success' | 'warning') => void;
   hideToast: () => void;
 
@@ -284,6 +285,22 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
+  const resetBooking = () => {
+    setPassengerCountState(2);
+    setActivePassengerIdState('pax-1');
+    setActiveLayoutState('3-2');
+    setCurrentStep('flight');
+    setSeatAssignments({
+      '3-2': {},
+      '2-3-2': {},
+    });
+    setMealSelections({
+      'pax-1': 'meal-none',
+      'pax-2': 'meal-none',
+    });
+    showToast('Reset all selections to default', 'info');
+  };
+
   const activeMealOption = useMemo(() => {
     const mealId = mealSelections[activePassenger.id] || 'meal-none';
     return MEAL_OPTIONS.find((m) => m.id === mealId) || MEAL_OPTIONS[0];
@@ -364,6 +381,7 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
         selectSeat,
         removeSeat,
         selectMeal,
+        resetBooking,
         showToast,
         hideToast,
         passengerSummaries,

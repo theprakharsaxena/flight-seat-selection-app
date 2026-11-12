@@ -17,7 +17,7 @@ const STEPS_DATA: { key: StepKey; title: string; stepNumber: number }[] = [
 ];
 
 export const Header: React.FC<HeaderProps> = ({ onBack }) => {
-  const { currentStep, prevStep, setPassengerCount, showToast } = useBooking();
+  const { currentStep, prevStep, resetBooking } = useBooking();
 
   const handleBack = () => {
     if (onBack) {
@@ -28,8 +28,7 @@ export const Header: React.FC<HeaderProps> = ({ onBack }) => {
   };
 
   const handleReset = () => {
-    setPassengerCount(2);
-    showToast('Reset selection to default', 'info');
+    resetBooking();
   };
 
   const currentStepData = STEPS_DATA.find((s) => s.key === currentStep) || STEPS_DATA[0];

@@ -20,7 +20,7 @@ export const BookingSummaryScreen: React.FC = () => {
     totalMealCharges,
     totalAmount,
     setCurrentStep,
-    setPassengerCount,
+    resetBooking,
   } = useBooking();
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -33,8 +33,7 @@ export const BookingSummaryScreen: React.FC = () => {
 
   const handleResetAll = () => {
     setShowConfirmModal(false);
-    setPassengerCount(2);
-    setCurrentStep('flight');
+    resetBooking();
   };
 
   return (
