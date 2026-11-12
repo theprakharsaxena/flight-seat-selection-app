@@ -5,28 +5,18 @@ import { useBooking } from '../context/BookingContext';
 import { StepKey } from '../types';
 
 interface HeaderProps {
-  title: string;
-  subtitle?: string;
-  showBack?: boolean;
   onBack?: () => void;
-  showReset?: boolean;
 }
 
-const STEP_TITLES: Record<StepKey, { title: string; subtitle: string }> = {
-  flight: { title: 'Flight Details', subtitle: 'DEL → BOM • EA 204' },
-  passengers: { title: 'Passenger Information', subtitle: 'Select traveler count & details' },
-  seats: { title: 'Select Your Seats', subtitle: 'Choose cabin seating' },
-  meals: { title: 'Meal Preferences', subtitle: 'Select dining options per passenger' },
-  summary: { title: 'Booking Summary', subtitle: 'Review breakdown & total charges' },
-};
+const STEPS_DATA: { key: StepKey; title: string; stepNumber: number }[] = [
+  { key: 'flight', title: 'Flight Details', stepNumber: 1 },
+  { key: 'passengers', title: 'Passengers', stepNumber: 2 },
+  { key: 'seats', title: 'Select Seats', stepNumber: 3 },
+  { key: 'meals', title: 'Meals', stepNumber: 4 },
+  { key: 'summary', title: 'Review & Pay', stepNumber: 5 },
+];
 
-export const Header: React.FC<HeaderProps> = ({
-  title,
-  subtitle,
-  showBack = true,
-  onBack,
-  showReset = false,
-}) => {
+export const Header: React.FC<HeaderProps> = ({ onBack }) => {
   const { currentStep, prevStep, setPassengerCount, showToast } = useBooking();
 
   const handleBack = () => {
@@ -42,48 +32,49 @@ export const Header: React.FC<HeaderProps> = ({
     showToast('Reset selection to default', 'info');
   };
 
-  const currentInfo = STEP_TITLES[currentStep];
-  const displayTitle = title || currentInfo.title;
-  const displaySubtitle = subtitle || currentInfo.subtitle;
-  const canGoBack = showBack && currentStep !== 'flight';
+  const currentStepData = STEPS_DATA.find((s) => s.key === currentStep) || STEPS_DATA[0];
+  const canGoBack = currentStep !== 'flight';
+  const progressPercent = (currentStepData.stepNumber / STEPS_DATA.length) * 100;
 
   return (
     <View style={styles.container}>
-      <View style={styles.topRow}>
+      {/* Top Bar */}
+      <View style={styles.navRow}>
         <View style={styles.leftSlot}>
           {canGoBack && (
             <TouchableOpacity
               style={styles.backButton}
               onPress={handleBack}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              activeOpacity={0.7}
               accessibilityLabel="Back"
             >
-              <ArrowLeft size={20} color="#0F172A" />
+              <ArrowLeft size={18} color="#0F172A" strokeWidth={2.5} />
             </TouchableOpacity>
           )}
         </View>
 
-        <View style={styles.titleContainer}>
-          <Text style={styles.title} numberOfLines={1}>
-            {displayTitle}
-          </Text>
-          <Text style={styles.subtitle} numberOfLines={1}>
-            {displaySubtitle}
-          </Text>
+        <View style={styles.centerSlot}>
+          <Text style={styles.flightTag}>EA 204 • DEL → BOM</Text>
+          <Text style={styles.screenTitle}>{currentStepData.title}</Text>
         </View>
 
         <View style={styles.rightSlot}>
-          {showReset && (
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleReset}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Reset"
-            >
-              <RotateCcw size={17} color="#64748B" />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={styles.resetButton}
+            onPress={handleReset}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            activeOpacity={0.7}
+            accessibilityLabel="Reset"
+          >
+            <RotateCcw size={15} color="#64748B" />
+          </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Slim Progress Bar */}
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
       </View>
     </View>
   );
@@ -93,18 +84,19 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 10,
+    borderBottomColor: '#F1F5F9',
   },
-  topRow: {
+  navRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 10,
   },
   leftSlot: {
     width: 36,
+    alignItems: 'flex-start',
     justifyContent: 'center',
   },
   rightSlot: {
@@ -112,15 +104,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F1F5F9',
+  centerSlot: {
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  actionButton: {
+  backButton: {
     width: 34,
     height: 34,
     borderRadius: 17,
@@ -130,21 +118,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  titleContainer: {
-    flex: 1,
+  resetButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  title: {
-    fontSize: 17,
+  flightTag: {
+    fontSize: 10,
     fontWeight: '700',
-    color: '#0F172A',
-    letterSpacing: -0.2,
+    color: '#2563EB',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
-  subtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#64748B',
-    marginTop: 2,
+  screenTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+    marginTop: 1,
+  },
+  progressTrack: {
+    height: 2.5,
+    backgroundColor: '#E2E8F0',
+    width: '100%',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#0F172A',
+    borderRadius: 1.5,
   },
 });
-

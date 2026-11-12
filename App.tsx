@@ -39,11 +39,7 @@ const MainApp: React.FC = () => {
       <StatusBar style="dark" />
 
       {/* Top Application Bar */}
-      <Header
-        title=""
-        showBack={currentStep !== 'flight'}
-        showReset={true}
-      />
+      <Header />
 
       {/* Workflow Stepper */}
       <StepIndicator

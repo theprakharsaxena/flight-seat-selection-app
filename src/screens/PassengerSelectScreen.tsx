@@ -1,17 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import {
-  Users,
   Plus,
   Minus,
-  CheckCircle,
   Armchair,
   Utensils,
-  ChevronRight,
   UserCheck,
 } from 'lucide-react-native';
 import { useBooking } from '../context/BookingContext';
-import { SAMPLE_PASSENGERS } from '../data/passengerData';
 
 export const PassengerSelectScreen: React.FC = () => {
   const {
@@ -21,21 +17,16 @@ export const PassengerSelectScreen: React.FC = () => {
     setActivePassengerId,
     setPassengerCount,
     getSeatForPassenger,
-    nextStep,
   } = useBooking();
 
   const { passengerCount, activeLayout, mealSelections } = state;
 
   const handleIncrement = () => {
-    if (passengerCount < 6) {
-      setPassengerCount(passengerCount + 1);
-    }
+    if (passengerCount < 6) setPassengerCount(passengerCount + 1);
   };
 
   const handleDecrement = () => {
-    if (passengerCount > 1) {
-      setPassengerCount(passengerCount - 1);
-    }
+    if (passengerCount > 1) setPassengerCount(passengerCount - 1);
   };
 
   return (
@@ -44,67 +35,58 @@ export const PassengerSelectScreen: React.FC = () => {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Passenger Counter Section */}
+      {/* Traveler Count Stepper Card */}
       <View style={styles.counterCard}>
-        <View style={styles.counterHeader}>
-          <View style={styles.counterTitleGroup}>
-            <Text style={styles.cardHeading}>Number of Passengers</Text>
-            <Text style={styles.cardSubheading}>
-              Select between 1 and 6 passengers for this booking
+        <View style={styles.counterTop}>
+          <View style={styles.counterTextCol}>
+            <Text style={styles.counterTitle}>Number of Travelers</Text>
+            <Text style={styles.counterSubtitle}>
+              Select between 1 and 6 passengers
             </Text>
           </View>
 
-          {/* Stepper +/- */}
-          <View style={styles.stepperContainer}>
+          {/* Stepper Buttons */}
+          <View style={styles.stepperControl}>
             <TouchableOpacity
-              style={[
-                styles.stepButton,
-                passengerCount <= 1 && styles.stepButtonDisabled,
-              ]}
+              style={[styles.stepperBtn, passengerCount <= 1 && styles.stepperBtnDisabled]}
               onPress={handleDecrement}
               disabled={passengerCount <= 1}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
               accessibilityLabel="Decrease passenger count"
             >
-              <Minus size={18} color={passengerCount <= 1 ? '#94A3B8' : '#0F172A'} />
+              <Minus size={16} color={passengerCount <= 1 ? '#CBD5E1' : '#0F172A'} strokeWidth={2.5} />
             </TouchableOpacity>
 
-            <View style={styles.countDisplay}>
-              <Text style={styles.countText}>{passengerCount}</Text>
+            <View style={styles.stepperNumBox}>
+              <Text style={styles.stepperNumText}>{passengerCount}</Text>
             </View>
 
             <TouchableOpacity
-              style={[
-                styles.stepButton,
-                passengerCount >= 6 && styles.stepButtonDisabled,
-              ]}
+              style={[styles.stepperBtn, passengerCount >= 6 && styles.stepperBtnDisabled]}
               onPress={handleIncrement}
               disabled={passengerCount >= 6}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
               accessibilityLabel="Increase passenger count"
             >
-              <Plus size={18} color={passengerCount >= 6 ? '#94A3B8' : '#0F172A'} />
+              <Plus size={16} color={passengerCount >= 6 ? '#CBD5E1' : '#0F172A'} strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Quick select pills (1 to 6) */}
+        {/* Quick Numerical Pills */}
         <View style={styles.pillRow}>
           {[1, 2, 3, 4, 5, 6].map((num) => {
             const isSelected = passengerCount === num;
             return (
               <TouchableOpacity
                 key={num}
-                style={[styles.numberPill, isSelected && styles.numberPillActive]}
+                style={[styles.quickPill, isSelected && styles.quickPillActive]}
                 onPress={() => setPassengerCount(num)}
                 activeOpacity={0.7}
               >
-                <Text
-                  style={[
-                    styles.numberPillText,
-                    isSelected && styles.numberPillTextActive,
-                  ]}
-                >
+                <Text style={[styles.quickPillText, isSelected && styles.quickPillTextActive]}>
                   {num}
                 </Text>
               </TouchableOpacity>
@@ -113,15 +95,15 @@ export const PassengerSelectScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Passenger List Header */}
-      <View style={styles.listHeaderRow}>
-        <Text style={styles.sectionTitle}>PASSENGER ROSTER</Text>
-        <Text style={styles.sectionSubtitle}>
-          Tap a passenger to set as active for seat & meal selection
+      {/* Roster Section Header */}
+      <View style={styles.rosterHeader}>
+        <Text style={styles.rosterTitle}>TRAVELER ROSTER ({validPassengers.length})</Text>
+        <Text style={styles.rosterSub}>
+          Tap any traveler to choose their seat and meal
         </Text>
       </View>
 
-      {/* List of active passengers */}
+      {/* Traveler Cards */}
       {validPassengers.map((passenger, index) => {
         const isActive = passenger.id === activePassenger.id;
         const assignedSeat = getSeatForPassenger(passenger.id, activeLayout);
@@ -131,19 +113,19 @@ export const PassengerSelectScreen: React.FC = () => {
         return (
           <TouchableOpacity
             key={passenger.id}
-            style={[styles.passengerCard, isActive && styles.passengerCardActive]}
+            style={[styles.travelerCard, isActive && styles.travelerCardActive]}
             onPress={() => setActivePassengerId(passenger.id)}
             activeOpacity={0.8}
           >
-            {/* Left Avatar & Name */}
-            <View style={styles.paxMainRow}>
+            {/* Top Info Row */}
+            <View style={styles.travelerTopRow}>
               <View
                 style={[
-                  styles.avatar,
+                  styles.avatarCircle,
                   { backgroundColor: passenger.avatarColor || '#2563EB' },
                 ]}
               >
-                <Text style={styles.avatarText}>
+                <Text style={styles.avatarInitials}>
                   {passenger.name
                     .split(' ')
                     .map((n) => n[0])
@@ -152,83 +134,75 @@ export const PassengerSelectScreen: React.FC = () => {
                 </Text>
               </View>
 
-              <View style={styles.paxInfo}>
+              <View style={styles.travelerDetails}>
                 <View style={styles.nameRow}>
-                  <Text style={[styles.paxName, isActive && styles.paxNameActive]}>
+                  <Text style={[styles.travelerName, isActive && styles.travelerNameActive]}>
                     {passenger.name}
                   </Text>
                   {isActive && (
-                    <View style={styles.activeTag}>
-                      <UserCheck size={11} color="#2563EB" />
-                      <Text style={styles.activeTagText}>Active</Text>
+                    <View style={styles.activePill}>
+                      <UserCheck size={10} color="#1E40AF" strokeWidth={2.5} />
+                      <Text style={styles.activePillText}>Active</Text>
                     </View>
                   )}
                 </View>
-                <Text style={styles.paxCode}>
+                <Text style={styles.travelerMeta}>
                   Traveler {index + 1} • {passenger.code}
                 </Text>
               </View>
             </View>
 
-            {/* Current Selections Status for this passenger */}
-            <View style={styles.statusRow}>
-              {/* Seat status badge */}
+            {/* Selection Badges */}
+            <View style={styles.badgesRow}>
+              {/* Seat Badge */}
               <View
                 style={[
-                  styles.statusBadge,
-                  assignedSeat ? styles.statusBadgeAssigned : styles.statusBadgeUnassigned,
+                  styles.badgePill,
+                  assignedSeat ? styles.badgePillAssigned : styles.badgePillEmpty,
                 ]}
               >
                 <Armchair
-                  size={14}
+                  size={12}
                   color={assignedSeat ? '#0F172A' : '#94A3B8'}
                   style={styles.badgeIcon}
                 />
                 <Text
                   style={[
-                    styles.statusBadgeText,
-                    assignedSeat && styles.statusBadgeTextAssigned,
+                    styles.badgeText,
+                    assignedSeat && styles.badgeTextAssigned,
                   ]}
                 >
                   {assignedSeat
                     ? `Seat ${assignedSeat.id} (${assignedSeat.price === 0 ? 'Free' : `₹${assignedSeat.price}`})`
-                    : 'No Seat Assigned'}
+                    : 'No Seat Selected'}
                 </Text>
               </View>
 
-              {/* Meal status badge */}
+              {/* Meal Badge */}
               <View
                 style={[
-                  styles.statusBadge,
-                  hasMeal ? styles.statusBadgeAssigned : styles.statusBadgeUnassigned,
+                  styles.badgePill,
+                  hasMeal ? styles.badgePillAssigned : styles.badgePillEmpty,
                 ]}
               >
                 <Utensils
-                  size={14}
+                  size={12}
                   color={hasMeal ? '#059669' : '#94A3B8'}
                   style={styles.badgeIcon}
                 />
                 <Text
                   style={[
-                    styles.statusBadgeText,
-                    hasMeal && styles.statusBadgeTextMeal,
+                    styles.badgeText,
+                    hasMeal && styles.badgeTextMeal,
                   ]}
                 >
-                  {hasMeal ? 'Meal Selected' : 'No Meal Added'}
+                  {hasMeal ? 'Meal Chosen' : 'No Meal'}
                 </Text>
               </View>
             </View>
           </TouchableOpacity>
         );
       })}
-
-      {/* Helpful Hint */}
-      <View style={styles.guidanceBox}>
-        <Text style={styles.guidanceTitle}>Selection Workflow</Text>
-        <Text style={styles.guidanceText}>
-          Each passenger receives an independent seat in your chosen cabin configuration ({activeLayout}). If you change the passenger count later, unallocated seats will be released automatically.
-        </Text>
-      </View>
     </ScrollView>
   );
 };
@@ -244,40 +218,39 @@ const styles = StyleSheet.create({
   },
   counterCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 16,
-    marginBottom: 20,
+    padding: 14,
+    marginBottom: 16,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 2,
   },
-  counterHeader: {
+  counterTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  counterTitleGroup: {
+  counterTextCol: {
     flex: 1,
-    paddingRight: 12,
+    paddingRight: 8,
   },
-  cardHeading: {
-    fontSize: 16,
-    fontWeight: '700',
+  counterTitle: {
+    fontSize: 15,
+    fontWeight: '800',
     color: '#0F172A',
   },
-  cardSubheading: {
+  counterSubtitle: {
     fontSize: 12,
-    fontWeight: '400',
+    fontWeight: '500',
     color: '#64748B',
     marginTop: 2,
-    lineHeight: 16,
   },
-  stepperContainer: {
+  stepperControl: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F1F5F9',
@@ -286,30 +259,23 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     padding: 3,
   },
-  stepButton: {
-    width: 34,
-    height: 34,
+  stepperBtn: {
+    width: 32,
+    height: 32,
     borderRadius: 6,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
-    elevation: 1,
   },
-  stepButtonDisabled: {
+  stepperBtnDisabled: {
     backgroundColor: '#F1F5F9',
-    elevation: 0,
-    shadowOpacity: 0,
   },
-  countDisplay: {
-    width: 32,
+  stepperNumBox: {
+    width: 28,
     alignItems: 'center',
   },
-  countText: {
-    fontSize: 16,
+  stepperNumText: {
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
   },
@@ -318,12 +284,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
-    paddingTop: 12,
+    paddingTop: 10,
   },
-  numberPill: {
+  quickPill: {
     flex: 1,
-    height: 36,
-    marginHorizontal: 3,
+    height: 34,
+    marginHorizontal: 2.5,
     borderRadius: 6,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
@@ -331,39 +297,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  numberPillActive: {
+  quickPillActive: {
     backgroundColor: '#0F172A',
     borderColor: '#0F172A',
   },
-  numberPillText: {
+  quickPillText: {
     fontSize: 13,
     fontWeight: '700',
     color: '#475569',
   },
-  numberPillTextActive: {
+  quickPillTextActive: {
     color: '#FFFFFF',
   },
-  listHeaderRow: {
-    marginBottom: 10,
+  rosterHeader: {
+    marginBottom: 8,
+    paddingHorizontal: 2,
   },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: '700',
+  rosterTitle: {
+    fontSize: 10,
+    fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.8,
   },
-  sectionSubtitle: {
-    fontSize: 12,
-    fontWeight: '400',
+  rosterSub: {
+    fontSize: 11,
+    fontWeight: '500',
     color: '#94A3B8',
-    marginTop: 2,
+    marginTop: 1,
   },
-  passengerCard: {
+  travelerCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    padding: 14,
+    padding: 12,
     marginBottom: 10,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
@@ -371,123 +338,102 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
-  passengerCardActive: {
+  travelerCardActive: {
     borderColor: '#2563EB',
     backgroundColor: '#F8FAFC',
   },
-  paxMainRow: {
+  travelerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  avatarCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
-  avatarText: {
-    fontSize: 14,
+  avatarInitials: {
+    fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  paxInfo: {
+  travelerDetails: {
     flex: 1,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  paxName: {
-    fontSize: 15,
-    fontWeight: '700',
+  travelerName: {
+    fontSize: 14,
+    fontWeight: '800',
     color: '#0F172A',
   },
-  paxNameActive: {
+  travelerNameActive: {
     color: '#1E40AF',
   },
-  activeTag: {
+  activePill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#DBEAFE',
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 1.5,
     borderRadius: 4,
-    marginLeft: 8,
+    marginLeft: 6,
   },
-  activeTagText: {
-    fontSize: 10,
-    fontWeight: '700',
+  activePillText: {
+    fontSize: 9,
+    fontWeight: '800',
     color: '#1E40AF',
-    marginLeft: 3,
+    marginLeft: 2,
   },
-  paxCode: {
-    fontSize: 12,
+  travelerMeta: {
+    fontSize: 11,
     fontWeight: '500',
     color: '#64748B',
-    marginTop: 2,
+    marginTop: 1,
   },
-  statusRow: {
+  badgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
-    paddingTop: 10,
+    paddingTop: 8,
   },
-  statusBadge: {
+  badgePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 3.5,
     paddingHorizontal: 8,
     borderRadius: 6,
     marginRight: 8,
     borderWidth: 1,
   },
-  statusBadgeAssigned: {
+  badgePillAssigned: {
     backgroundColor: '#F1F5F9',
     borderColor: '#CBD5E1',
   },
-  statusBadgeUnassigned: {
+  badgePillEmpty: {
     backgroundColor: '#FAFAFA',
     borderColor: '#E2E8F0',
   },
   badgeIcon: {
-    marginRight: 5,
+    marginRight: 4,
   },
-  statusBadgeText: {
-    fontSize: 11,
+  badgeText: {
+    fontSize: 10,
     fontWeight: '500',
     color: '#94A3B8',
   },
-  statusBadgeTextAssigned: {
+  badgeTextAssigned: {
     color: '#0F172A',
-    fontWeight: '600',
-  },
-  statusBadgeTextMeal: {
-    color: '#059669',
-    fontWeight: '600',
-  },
-  guidanceBox: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 10,
-    padding: 14,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  guidanceTitle: {
-    fontSize: 12,
     fontWeight: '700',
-    color: '#334155',
-    marginBottom: 4,
   },
-  guidanceText: {
-    fontSize: 11,
-    fontWeight: '400',
-    color: '#64748B',
-    lineHeight: 16,
+  badgeTextMeal: {
+    color: '#059669',
+    fontWeight: '700',
   },
 });
-

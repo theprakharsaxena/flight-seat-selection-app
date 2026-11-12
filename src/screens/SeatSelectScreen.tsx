@@ -1,15 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import {
-  Armchair,
-  Layers,
-  Trash2,
-  User,
-  CheckCircle2,
-  Info,
-} from 'lucide-react-native';
+import { Trash2, User, Check, Layers } from 'lucide-react-native';
 import { useBooking } from '../context/BookingContext';
-import { CabinLayoutType } from '../types';
 import { SeatLegend } from '../components/SeatLegend';
 import { SeatMap } from '../components/SeatMap';
 
@@ -30,75 +22,64 @@ export const SeatSelectScreen: React.FC = () => {
   const currentSeat = getSeatForPassenger(activePassenger.id, activeLayout);
   const activeAssignments = seatAssignments[activeLayout];
 
-  // Number of passengers that have been assigned a seat in this layout
   const assignedCount = validPassengers.filter((p) => Boolean(activeAssignments[p.id])).length;
   const totalCount = validPassengers.length;
 
   return (
     <View style={styles.container}>
-      {/* 1. Layout Segment Control Bar */}
-      <View style={styles.layoutBar}>
-        <View style={styles.segmentControl}>
+      {/* 1. Ultra-clean Top Control Bar: Layout Toggle & Status */}
+      <View style={styles.topControlBar}>
+        <View style={styles.layoutToggleWrapper}>
           <TouchableOpacity
             style={[
-              styles.segmentButton,
-              activeLayout === '3-2' && styles.segmentButtonActive,
+              styles.layoutToggleBtn,
+              activeLayout === '3-2' && styles.layoutToggleBtnActive,
             ]}
             onPress={() => setActiveLayout('3-2')}
             activeOpacity={0.8}
           >
             <Text
               style={[
-                styles.segmentText,
-                activeLayout === '3-2' && styles.segmentTextActive,
+                styles.layoutToggleText,
+                activeLayout === '3-2' && styles.layoutToggleTextActive,
               ]}
             >
-              3–2 Single Aisle
-            </Text>
-            <Text
-              style={[
-                styles.segmentSubtext,
-                activeLayout === '3-2' && styles.segmentSubtextActive,
-              ]}
-            >
-              A B C | D E
+              3–2 Cabin
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[
-              styles.segmentButton,
-              activeLayout === '2-3-2' && styles.segmentButtonActive,
+              styles.layoutToggleBtn,
+              activeLayout === '2-3-2' && styles.layoutToggleBtnActive,
             ]}
             onPress={() => setActiveLayout('2-3-2')}
             activeOpacity={0.8}
           >
             <Text
               style={[
-                styles.segmentText,
-                activeLayout === '2-3-2' && styles.segmentTextActive,
+                styles.layoutToggleText,
+                activeLayout === '2-3-2' && styles.layoutToggleTextActive,
               ]}
             >
-              2–3–2 Twin Aisle
-            </Text>
-            <Text
-              style={[
-                styles.segmentSubtext,
-                activeLayout === '2-3-2' && styles.segmentSubtextActive,
-              ]}
-            >
-              A B | C D E | F G
+              2–3–2 Wide-Body
             </Text>
           </TouchableOpacity>
         </View>
+
+        <View style={styles.statusPill}>
+          <Text style={styles.statusPillText}>
+            {assignedCount}/{totalCount} Seats
+          </Text>
+        </View>
       </View>
 
-      {/* 2. Horizontal Passenger Selector Pills */}
-      <View style={styles.passengerSelectorContainer}>
+      {/* 2. Horizontal Passenger Strip with Quick Seat Badges */}
+      <View style={styles.passengerStrip}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.paxScrollContent}
+          contentContainerStyle={styles.paxScroll}
         >
           {validPassengers.map((pax) => {
             const isActive = pax.id === activePassenger.id;
@@ -107,25 +88,33 @@ export const SeatSelectScreen: React.FC = () => {
             return (
               <TouchableOpacity
                 key={pax.id}
-                style={[styles.paxPill, isActive && styles.paxPillActive]}
+                style={[styles.paxChip, isActive && styles.paxChipActive]}
                 onPress={() => setActivePassengerId(pax.id)}
                 activeOpacity={0.8}
               >
                 <View
                   style={[
-                    styles.paxPillDot,
+                    styles.paxDot,
                     { backgroundColor: pax.avatarColor || '#2563EB' },
                   ]}
-                />
-                <Text style={[styles.paxPillName, isActive && styles.paxPillNameActive]}>
+                >
+                  <Text style={styles.paxDotText}>
+                    {pax.name.charAt(0)}
+                  </Text>
+                </View>
+
+                <Text style={[styles.paxName, isActive && styles.paxNameActive]}>
                   {pax.name.split(' ')[0]}
                 </Text>
+
                 {assigned ? (
-                  <View style={styles.paxPillSeatBadge}>
-                    <Text style={styles.paxPillSeatText}>{assigned.id}</Text>
+                  <View style={styles.seatBadge}>
+                    <Text style={styles.seatBadgeText}>{assigned.id}</Text>
                   </View>
                 ) : (
-                  <View style={styles.paxPillUnassignedDot} />
+                  <View style={styles.seatUnassignedBadge}>
+                    <Text style={styles.seatUnassignedText}>—</Text>
+                  </View>
                 )}
               </TouchableOpacity>
             );
@@ -133,40 +122,40 @@ export const SeatSelectScreen: React.FC = () => {
         </ScrollView>
       </View>
 
-      {/* 3. Active Passenger Context Bar */}
-      <View style={styles.activePassengerBar}>
-        <View style={styles.activeBarLeft}>
-          <Text style={styles.activeBarPrompt}>Selecting seat for:</Text>
-          <Text style={styles.activeBarName}>{activePassenger.name}</Text>
+      {/* 3. Compact Active Traveler Banner */}
+      <View style={styles.activeTravelerBanner}>
+        <View style={styles.activeTravelerLeft}>
+          <Text style={styles.travelerLabel}>Selecting for</Text>
+          <Text style={styles.travelerName}>{activePassenger.name}</Text>
         </View>
 
-        <View style={styles.activeBarRight}>
+        <View style={styles.activeTravelerRight}>
           {currentSeat ? (
-            <View style={styles.assignedBadgeRow}>
-              <View style={styles.seatPill}>
-                <Text style={styles.seatPillText}>
+            <View style={styles.currentSeatBox}>
+              <View style={styles.currentSeatPill}>
+                <Text style={styles.currentSeatPillText}>
                   {currentSeat.id} • {currentSeat.price === 0 ? 'Free' : `₹${currentSeat.price}`}
                 </Text>
               </View>
               <TouchableOpacity
-                style={styles.removeSeatBtn}
+                style={styles.trashBtn}
                 onPress={() => removeSeat(activePassenger.id)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityLabel="Remove seat"
+                accessibilityLabel="Clear seat"
               >
-                <Trash2 size={15} color="#EF4444" />
+                <Trash2 size={13} color="#EF4444" />
               </TouchableOpacity>
             </View>
           ) : (
-            <Text style={styles.noSeatSelectedText}>Tap an available seat</Text>
+            <Text style={styles.tapPrompt}>Tap an available seat below</Text>
           )}
         </View>
       </View>
 
-      {/* 4. Compact Legend */}
+      {/* 4. Streamlined Legend */}
       <SeatLegend />
 
-      {/* 5. Aircraft Cabin Seat Map */}
+      {/* 5. Full Aircraft Fuselage Map */}
       <SeatMap
         layout={activeLayout}
         activePassenger={activePassenger}
@@ -184,27 +173,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-  layoutBar: {
+  topControlBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#F1F5F9',
   },
-  segmentControl: {
+  layoutToggleWrapper: {
     flexDirection: 'row',
     backgroundColor: '#F1F5F9',
     borderRadius: 8,
-    padding: 3,
+    padding: 2.5,
   },
-  segmentButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 7,
+  layoutToggleBtn: {
+    paddingVertical: 5,
+    paddingHorizontal: 12,
     borderRadius: 6,
   },
-  segmentButtonActive: {
+  layoutToggleBtnActive: {
     backgroundColor: '#FFFFFF',
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
@@ -212,135 +202,151 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  segmentText: {
-    fontSize: 12,
+  layoutToggleText: {
+    fontSize: 11,
     fontWeight: '600',
     color: '#64748B',
   },
-  segmentTextActive: {
-    fontWeight: '700',
+  layoutToggleTextActive: {
+    fontWeight: '800',
     color: '#0F172A',
   },
-  segmentSubtext: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#94A3B8',
-    marginTop: 1,
+  statusPill: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
   },
-  segmentSubtextActive: {
-    color: '#2563EB',
+  statusPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1E40AF',
   },
-  passengerSelectorContainer: {
+  passengerStrip: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#F1F5F9',
   },
-  paxScrollContent: {
+  paxScroll: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    alignItems: 'center',
   },
-  paxPill: {
+  paxChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
     borderRadius: 20,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    marginHorizontal: 4,
+    paddingVertical: 4,
+    paddingLeft: 4,
+    paddingRight: 8,
+    marginRight: 6,
   },
-  paxPillActive: {
+  paxChipActive: {
     backgroundColor: '#EFF6FF',
     borderColor: '#2563EB',
   },
-  paxPillDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  paxDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 6,
   },
-  paxPillName: {
+  paxDotText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  paxName: {
     fontSize: 12,
     fontWeight: '600',
     color: '#475569',
+    marginRight: 6,
   },
-  paxPillNameActive: {
+  paxNameActive: {
     color: '#1E40AF',
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  paxPillSeatBadge: {
+  seatBadge: {
     backgroundColor: '#0F172A',
     borderRadius: 4,
     paddingHorizontal: 5,
     paddingVertical: 1,
-    marginLeft: 6,
   },
-  paxPillSeatText: {
-    fontSize: 10,
+  seatBadgeText: {
+    fontSize: 9,
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  paxPillUnassignedDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#CBD5E1',
-    marginLeft: 6,
+  seatUnassignedBadge: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  activePassengerBar: {
+  seatUnassignedText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+  activeTravelerBanner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
-  activeBarLeft: {
+  activeTravelerLeft: {
     flex: 1,
   },
-  activeBarPrompt: {
-    fontSize: 11,
+  travelerLabel: {
+    fontSize: 10,
     fontWeight: '500',
     color: '#64748B',
   },
-  activeBarName: {
-    fontSize: 14,
-    fontWeight: '700',
+  travelerName: {
+    fontSize: 13,
+    fontWeight: '800',
     color: '#0F172A',
   },
-  activeBarRight: {
+  activeTravelerRight: {
     alignItems: 'flex-end',
   },
-  assignedBadgeRow: {
+  currentSeatBox: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  seatPill: {
+  currentSeatPill: {
     backgroundColor: '#0F172A',
-    paddingVertical: 4,
     paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 6,
     marginRight: 6,
   },
-  seatPillText: {
+  currentSeatPillText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#FFFFFF',
   },
-  removeSeatBtn: {
-    padding: 4,
+  trashBtn: {
+    padding: 3,
     borderRadius: 4,
     backgroundColor: '#FEE2E2',
   },
-  noSeatSelectedText: {
-    fontSize: 12,
+  tapPrompt: {
+    fontSize: 11,
     fontWeight: '500',
     color: '#64748B',
     fontStyle: 'italic',
   },
 });
-

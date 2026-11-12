@@ -7,9 +7,7 @@ import {
   CheckCircle,
   Receipt,
   RotateCcw,
-  User,
   ShieldCheck,
-  Check,
   ArrowRight,
 } from 'lucide-react-native';
 import { useBooking } from '../context/BookingContext';
@@ -27,8 +25,7 @@ export const BookingSummaryScreen: React.FC = () => {
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const { flight, activeLayout, passengerCount } = state;
-
-  const layoutTitle = activeLayout === '3-2' ? '3–2 Single Aisle' : '2–3–2 Twin Aisle';
+  const layoutTitle = activeLayout === '3-2' ? '3–2 Single Aisle' : '2–3–2 Wide-Body';
 
   const handleFinishBooking = () => {
     setShowConfirmModal(true);
@@ -46,11 +43,11 @@ export const BookingSummaryScreen: React.FC = () => {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Flight Header Receipt Banner */}
-      <View style={styles.flightSummaryCard}>
-        <View style={styles.airlineRow}>
+      {/* Flight Itinerary Card */}
+      <View style={styles.itineraryCard}>
+        <View style={styles.itineraryHeader}>
           <View style={styles.airlineBadge}>
-            <Plane size={15} color="#2563EB" />
+            <Plane size={14} color="#2563EB" />
             <Text style={styles.airlineName}>{flight.airline}</Text>
           </View>
           <Text style={styles.flightCode}>{flight.flightNumber}</Text>
@@ -58,33 +55,33 @@ export const BookingSummaryScreen: React.FC = () => {
 
         <View style={styles.routeRow}>
           <View>
-            <Text style={styles.cityText}>{flight.origin.city} ({flight.origin.code})</Text>
-            <Text style={styles.timeText}>{flight.departureTime}</Text>
+            <Text style={styles.routeCity}>{flight.origin.city} ({flight.origin.code})</Text>
+            <Text style={styles.routeTime}>{flight.departureTime}</Text>
           </View>
-          <View style={styles.routeArrowBox}>
-            <Text style={styles.durationBadge}>{flight.duration}</Text>
-            <ArrowRight size={16} color="#64748B" />
+          <View style={styles.durationPill}>
+            <Text style={styles.durationPillText}>{flight.duration}</Text>
+            <ArrowRight size={14} color="#64748B" />
           </View>
           <View style={styles.routeRight}>
-            <Text style={styles.cityText}>{flight.destination.city} ({flight.destination.code})</Text>
-            <Text style={styles.timeText}>{flight.arrivalTime}</Text>
+            <Text style={styles.routeCity}>{flight.destination.city} ({flight.destination.code})</Text>
+            <Text style={styles.routeTime}>{flight.arrivalTime}</Text>
           </View>
         </View>
 
-        <View style={styles.layoutNoticeRow}>
-          <Text style={styles.layoutNoticeLabel}>Selected Cabin Layout:</Text>
-          <Text style={styles.layoutNoticeValue}>{layoutTitle}</Text>
+        <View style={styles.cabinMetaRow}>
+          <Text style={styles.cabinMetaLabel}>Cabin Configuration</Text>
+          <Text style={styles.cabinMetaValue}>{layoutTitle}</Text>
         </View>
       </View>
 
       {/* Passenger Breakdown Header */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>PASSENGER BREAKDOWN ({passengerCount})</Text>
+      <View style={styles.breakdownHeader}>
+        <Text style={styles.breakdownTitle}>PASSENGERS & SELECTIONS ({passengerCount})</Text>
         <TouchableOpacity
           onPress={() => setCurrentStep('seats')}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.modifyLink}>Modify Seats</Text>
+          <Text style={styles.modifyText}>Edit Seats</Text>
         </TouchableOpacity>
       </View>
 
@@ -97,20 +94,19 @@ export const BookingSummaryScreen: React.FC = () => {
             : seat.category === 'premium'
             ? 'Premium'
             : 'Standard'
-          : 'None';
+          : 'No Seat';
 
         return (
-          <View key={passenger.id} style={styles.passengerCard}>
-            {/* Passenger Title Row */}
-            <View style={styles.cardHeader}>
-              <View style={styles.paxTitleLeft}>
+          <View key={passenger.id} style={styles.paxCard}>
+            <View style={styles.paxCardHeader}>
+              <View style={styles.paxCardLeft}>
                 <View
                   style={[
-                    styles.avatar,
+                    styles.avatarMini,
                     { backgroundColor: passenger.avatarColor || '#2563EB' },
                   ]}
                 >
-                  <Text style={styles.avatarText}>
+                  <Text style={styles.avatarMiniText}>
                     {passenger.name
                       .split(' ')
                       .map((n) => n[0])
@@ -120,24 +116,24 @@ export const BookingSummaryScreen: React.FC = () => {
                 </View>
                 <View>
                   <Text style={styles.paxName}>{passenger.name}</Text>
-                  <Text style={styles.paxSub}>{passenger.code} • Traveler {index + 1}</Text>
+                  <Text style={styles.paxMeta}>{passenger.code} • Traveler {index + 1}</Text>
                 </View>
               </View>
 
-              <Text style={styles.paxTotalText}>
+              <Text style={styles.paxTotalCost}>
                 ₹{totalPassengerCost.toLocaleString('en-IN')}
               </Text>
             </View>
 
-            {/* Seat Line Item */}
-            <View style={styles.lineItemRow}>
-              <View style={styles.lineItemLeft}>
-                <Armchair size={15} color="#475569" style={styles.lineIcon} />
+            {/* Seat Line */}
+            <View style={styles.lineItem}>
+              <View style={styles.lineLeft}>
+                <Armchair size={14} color="#64748B" style={styles.lineIcon} />
                 <View>
-                  <Text style={styles.lineTitle}>
-                    {seat ? `Seat ${seat.id}` : 'No Seat Assigned'}
+                  <Text style={styles.lineMain}>
+                    {seat ? `Seat ${seat.id}` : 'No seat allocated'}
                   </Text>
-                  <Text style={styles.lineSubtitle}>{seatCategoryLabel}</Text>
+                  <Text style={styles.lineSub}>{seatCategoryLabel}</Text>
                 </View>
               </View>
               <Text style={styles.linePrice}>
@@ -145,13 +141,13 @@ export const BookingSummaryScreen: React.FC = () => {
               </Text>
             </View>
 
-            {/* Meal Line Item */}
-            <View style={[styles.lineItemRow, styles.lineItemBorder]}>
-              <View style={styles.lineItemLeft}>
-                <Utensils size={15} color="#475569" style={styles.lineIcon} />
+            {/* Meal Line */}
+            <View style={[styles.lineItem, styles.lineBorderTop]}>
+              <View style={styles.lineLeft}>
+                <Utensils size={14} color="#64748B" style={styles.lineIcon} />
                 <View>
-                  <Text style={styles.lineTitle}>{meal.name}</Text>
-                  <Text style={styles.lineSubtitle}>{meal.dietaryTag || 'Dining'}</Text>
+                  <Text style={styles.lineMain}>{meal.name}</Text>
+                  <Text style={styles.lineSub}>{meal.dietaryTag || 'Dining'}</Text>
                 </View>
               </View>
               <Text style={styles.linePrice}>
@@ -162,104 +158,96 @@ export const BookingSummaryScreen: React.FC = () => {
         );
       })}
 
-      {/* Pricing Summary Calculation Card */}
-      <View style={styles.priceCard}>
-        <View style={styles.priceCardHeader}>
-          <Receipt size={17} color="#0F172A" />
-          <Text style={styles.priceCardTitle}>CHARGES SUMMARY</Text>
+      {/* Charges Breakdown Receipt Card */}
+      <View style={styles.receiptCard}>
+        <View style={styles.receiptHeader}>
+          <Receipt size={16} color="#0F172A" />
+          <Text style={styles.receiptTitle}>FARE & CHARGES BREAKDOWN</Text>
         </View>
 
-        <View style={styles.chargeRow}>
-          <Text style={styles.chargeLabel}>
-            Total Seat Selection Charges ({passengerCount} pax)
-          </Text>
-          <Text style={styles.chargeValue}>
-            ₹{totalSeatCharges.toLocaleString('en-IN')}
-          </Text>
+        <View style={styles.receiptRow}>
+          <Text style={styles.receiptLabel}>Seat Selection ({passengerCount} travelers)</Text>
+          <Text style={styles.receiptValue}>₹{totalSeatCharges.toLocaleString('en-IN')}</Text>
         </View>
 
-        <View style={styles.chargeRow}>
-          <Text style={styles.chargeLabel}>
-            Total In-flight Meal Charges ({passengerCount} meals)
-          </Text>
-          <Text style={styles.chargeValue}>
-            ₹{totalMealCharges.toLocaleString('en-IN')}
-          </Text>
+        <View style={styles.receiptRow}>
+          <Text style={styles.receiptLabel}>In-flight Meals ({passengerCount} meals)</Text>
+          <Text style={styles.receiptValue}>₹{totalMealCharges.toLocaleString('en-IN')}</Text>
         </View>
 
-        <View style={styles.chargeDivider} />
+        <View style={styles.receiptDivider} />
 
         <View style={styles.totalRow}>
           <View>
-            <Text style={styles.totalLabel}>Total Amount Due</Text>
-            <Text style={styles.totalTaxNotice}>Inclusive of all airline fees & taxes</Text>
+            <Text style={styles.totalLabel}>Total Amount</Text>
+            <Text style={styles.taxSub}>All applicable taxes included</Text>
           </View>
-          <Text style={styles.totalValue}>
+          <Text style={styles.grandTotalValue}>
             ₹{totalAmount.toLocaleString('en-IN')}
           </Text>
         </View>
       </View>
 
-      {/* Confirmation Action Button */}
+      {/* Confirmation CTA */}
       <TouchableOpacity
-        style={styles.confirmButton}
+        style={styles.confirmBtn}
         onPress={handleFinishBooking}
         activeOpacity={0.85}
       >
         <ShieldCheck size={18} color="#FFFFFF" style={styles.confirmIcon} />
-        <Text style={styles.confirmButtonText}>Confirm & Complete Booking</Text>
+        <Text style={styles.confirmBtnText}>Confirm Selection</Text>
       </TouchableOpacity>
 
-      {/* Confirmation Success Modal */}
+      {/* Confirmation Modal */}
       <Modal
         visible={showConfirmModal}
         transparent={true}
         animationType="fade"
         onRequestClose={() => setShowConfirmModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalIconCircle}>
-              <CheckCircle size={38} color="#059669" />
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalCheckCircle}>
+              <CheckCircle size={36} color="#059669" />
             </View>
 
-            <Text style={styles.modalTitle}>Seat Selection Confirmed</Text>
-            <Text style={styles.modalBookingRef}>
-              Booking Reference: EA-784291
+            <Text style={styles.modalHeading}>Seat Selection Confirmed</Text>
+            <Text style={styles.modalRefText}>
+              Reference Code: EA-784291
             </Text>
 
-            <View style={styles.modalSummaryBox}>
-              <View style={styles.modalSummaryRow}>
-                <Text style={styles.modalSummaryLabel}>Flight</Text>
-                <Text style={styles.modalSummaryVal}>DEL → BOM (EA 204)</Text>
+            <View style={styles.modalDataBox}>
+              <View style={styles.modalRow}>
+                <Text style={styles.modalRowKey}>Flight</Text>
+                <Text style={styles.modalRowVal}>DEL → BOM (EA 204)</Text>
               </View>
-              <View style={styles.modalSummaryRow}>
-                <Text style={styles.modalSummaryLabel}>Passengers</Text>
-                <Text style={styles.modalSummaryVal}>{passengerCount} Travelers</Text>
+              <View style={styles.modalRow}>
+                <Text style={styles.modalRowKey}>Travelers</Text>
+                <Text style={styles.modalRowVal}>{passengerCount} Passengers</Text>
               </View>
-              <View style={styles.modalSummaryRow}>
-                <Text style={styles.modalSummaryLabel}>Layout</Text>
-                <Text style={styles.modalSummaryVal}>{layoutTitle}</Text>
+              <View style={styles.modalRow}>
+                <Text style={styles.modalRowKey}>Cabin</Text>
+                <Text style={styles.modalRowVal}>{layoutTitle}</Text>
               </View>
-              <View style={styles.modalSummaryRow}>
-                <Text style={styles.modalSummaryLabel}>Total Paid</Text>
-                <Text style={styles.modalSummaryValHighlight}>
+              <View style={styles.modalRow}>
+                <Text style={styles.modalRowKey}>Total</Text>
+                <Text style={styles.modalRowValBold}>
                   ₹{totalAmount.toLocaleString('en-IN')}
                 </Text>
               </View>
             </View>
 
-            <Text style={styles.modalNote}>
-              Mock confirmation created for this frontend technical assessment. No live payment was charged.
+            <Text style={styles.modalFootnote}>
+              Mock technical assessment confirmation. No payment was charged.
             </Text>
 
             <TouchableOpacity
-              style={styles.modalDoneButton}
+              style={styles.modalDismissBtn}
               onPress={handleResetAll}
               activeOpacity={0.85}
             >
-              <RotateCcw size={16} color="#FFFFFF" style={styles.resetIcon} />
-              <Text style={styles.modalDoneButtonText}>Start New Booking</Text>
+              <RotateCcw size={15} color="#FFFFFF" style={styles.resetIco} />
+              <Text style={styles.modalDismissText}>Start New Booking</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -275,29 +263,29 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 28,
   },
-  flightSummaryCard: {
+  itineraryCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 14,
     marginBottom: 16,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowRadius: 4,
     elevation: 2,
   },
-  airlineRow: {
+  itineraryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
     paddingBottom: 8,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   airlineBadge: {
     flexDirection: 'row',
@@ -305,45 +293,45 @@ const styles = StyleSheet.create({
   },
   airlineName: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#0F172A',
     marginLeft: 6,
   },
   flightCode: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#2563EB',
   },
   routeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   routeRight: {
     alignItems: 'flex-end',
   },
-  cityText: {
+  routeCity: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#0F172A',
   },
-  timeText: {
+  routeTime: {
     fontSize: 12,
     fontWeight: '500',
     color: '#64748B',
     marginTop: 2,
   },
-  routeArrowBox: {
+  durationPill: {
     alignItems: 'center',
   },
-  durationBadge: {
+  durationPillText: {
     fontSize: 10,
     fontWeight: '600',
     color: '#64748B',
     marginBottom: 2,
   },
-  layoutNoticeRow: {
+  cabinMetaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -351,170 +339,159 @@ const styles = StyleSheet.create({
     borderTopColor: '#F1F5F9',
     paddingTop: 8,
   },
-  layoutNoticeLabel: {
+  cabinMetaLabel: {
     fontSize: 11,
     fontWeight: '500',
     color: '#64748B',
   },
-  layoutNoticeValue: {
+  cabinMetaValue: {
     fontSize: 12,
     fontWeight: '700',
     color: '#0F172A',
   },
-  sectionHeader: {
+  breakdownHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
     paddingHorizontal: 2,
   },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: '700',
+  breakdownTitle: {
+    fontSize: 10,
+    fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.8,
   },
-  modifyLink: {
+  modifyText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#2563EB',
   },
-  passengerCard: {
+  paxCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 14,
-    marginBottom: 10,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+    padding: 12,
+    marginBottom: 8,
   },
-  cardHeader: {
+  paxCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
-    paddingBottom: 10,
-    marginBottom: 10,
+    paddingBottom: 8,
+    marginBottom: 8,
   },
-  paxTitleLeft: {
+  paxCardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  avatarMini: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: 8,
   },
-  avatarText: {
-    fontSize: 12,
+  avatarMiniText: {
+    fontSize: 11,
     fontWeight: '800',
     color: '#FFFFFF',
   },
   paxName: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '800',
     color: '#0F172A',
   },
-  paxSub: {
-    fontSize: 11,
+  paxMeta: {
+    fontSize: 10,
     fontWeight: '500',
     color: '#64748B',
     marginTop: 1,
   },
-  paxTotalText: {
-    fontSize: 15,
+  paxTotalCost: {
+    fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
   },
-  lineItemRow: {
+  lineItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
-  lineItemBorder: {
-    marginTop: 6,
+  lineBorderTop: {
+    marginTop: 4,
     borderTopWidth: 1,
     borderTopColor: '#F8FAFC',
-    paddingTop: 8,
+    paddingTop: 6,
   },
-  lineItemLeft: {
+  lineLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   lineIcon: {
     marginRight: 8,
   },
-  lineTitle: {
-    fontSize: 13,
+  lineMain: {
+    fontSize: 12,
     fontWeight: '600',
     color: '#334155',
   },
-  lineSubtitle: {
-    fontSize: 11,
+  lineSub: {
+    fontSize: 10,
     fontWeight: '400',
     color: '#64748B',
-    marginTop: 1,
   },
   linePrice: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#334155',
   },
-  priceCard: {
+  receiptCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    padding: 16,
+    padding: 14,
     marginTop: 8,
-    marginBottom: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  priceCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 14,
   },
-  priceCardTitle: {
-    fontSize: 11,
-    fontWeight: '700',
+  receiptHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  receiptTitle: {
+    fontSize: 10,
+    fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.8,
     marginLeft: 6,
   },
-  chargeRow: {
+  receiptRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  chargeLabel: {
-    fontSize: 13,
+  receiptLabel: {
+    fontSize: 12,
     fontWeight: '500',
     color: '#475569',
   },
-  chargeValue: {
-    fontSize: 13,
+  receiptValue: {
+    fontSize: 12,
     fontWeight: '700',
     color: '#0F172A',
   },
-  chargeDivider: {
+  receiptDivider: {
     height: 1,
     backgroundColor: '#E2E8F0',
-    marginVertical: 12,
+    marginVertical: 10,
   },
   totalRow: {
     flexDirection: 'row',
@@ -522,139 +499,127 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   totalLabel: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
   },
-  totalTaxNotice: {
-    fontSize: 11,
+  taxSub: {
+    fontSize: 10,
     fontWeight: '500',
     color: '#64748B',
-    marginTop: 2,
+    marginTop: 1,
   },
-  totalValue: {
-    fontSize: 22,
-    fontWeight: '800',
+  grandTotalValue: {
+    fontSize: 20,
+    fontWeight: '900',
     color: '#0F172A',
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
-  confirmButton: {
+  confirmBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#0F172A',
-    paddingVertical: 14,
+    paddingVertical: 13,
     borderRadius: 10,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
   },
   confirmIcon: {
-    marginRight: 8,
+    marginRight: 6,
   },
-  confirmButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
+  confirmBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
     color: '#FFFFFF',
   },
-  modalOverlay: {
+  modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
-  modalContent: {
+  modalCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 24,
+    padding: 20,
     width: '100%',
-    maxWidth: 380,
+    maxWidth: 360,
     alignItems: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 10,
   },
-  modalIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  modalCheckCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#ECFDF5',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
-  modalTitle: {
-    fontSize: 18,
+  modalHeading: {
+    fontSize: 17,
     fontWeight: '800',
     color: '#0F172A',
     textAlign: 'center',
   },
-  modalBookingRef: {
-    fontSize: 13,
-    fontWeight: '600',
+  modalRefText: {
+    fontSize: 12,
+    fontWeight: '700',
     color: '#2563EB',
-    marginTop: 4,
-    marginBottom: 16,
+    marginTop: 3,
+    marginBottom: 14,
   },
-  modalSummaryBox: {
+  modalDataBox: {
     backgroundColor: '#F8FAFC',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 12,
+    padding: 10,
     width: '100%',
-    marginBottom: 14,
+    marginBottom: 12,
   },
-  modalSummaryRow: {
+  modalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
-  modalSummaryLabel: {
-    fontSize: 12,
+  modalRowKey: {
+    fontSize: 11,
     fontWeight: '500',
     color: '#64748B',
   },
-  modalSummaryVal: {
-    fontSize: 12,
+  modalRowVal: {
+    fontSize: 11,
     fontWeight: '700',
     color: '#1E293B',
   },
-  modalSummaryValHighlight: {
-    fontSize: 14,
+  modalRowValBold: {
+    fontSize: 13,
     fontWeight: '800',
     color: '#0F172A',
   },
-  modalNote: {
-    fontSize: 11,
+  modalFootnote: {
+    fontSize: 10,
     fontWeight: '400',
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: 16,
-    marginBottom: 18,
+    marginBottom: 14,
   },
-  modalDoneButton: {
+  modalDismissBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#0F172A',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
     borderRadius: 8,
     width: '100%',
   },
-  resetIcon: {
+  resetIco: {
     marginRight: 6,
   },
-  modalDoneButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
+  modalDismissText: {
+    fontSize: 13,
+    fontWeight: '800',
     color: '#FFFFFF',
   },
 });
-

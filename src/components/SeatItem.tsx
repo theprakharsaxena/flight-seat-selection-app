@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
-import { Check, X, Lock } from 'lucide-react-native';
+import { Check, X } from 'lucide-react-native';
 import { Passenger, SeatDefinition, SeatStatus } from '../types';
 
 interface SeatItemProps {
@@ -28,48 +28,27 @@ export const SeatItem: React.FC<SeatItemProps> = ({
     onSelect(seat.id);
   };
 
-  const getContainerStyle = () => {
-    if (isSelectedActive) {
-      return [styles.seat, styles.seatSelectedActive];
-    }
-    if (isAssignedOther) {
-      return [
-        styles.seat,
-        styles.seatAssignedOther,
-        assignedPassenger?.avatarColor
-          ? { borderColor: assignedPassenger.avatarColor }
-          : undefined,
-      ];
-    }
-    if (isOccupied) {
-      return [styles.seat, styles.seatOccupied];
-    }
-
-    // Available categories
-    if (seat.category === 'extra_legroom') {
-      return [styles.seat, styles.seatExtraLegroom];
-    }
-    if (seat.category === 'premium') {
-      return [styles.seat, styles.seatPremium];
-    }
-
-    return [styles.seat, styles.seatStandard];
+  const getSeatStyle = () => {
+    if (isSelectedActive) return styles.seatActive;
+    if (isAssignedOther) return styles.seatAssigned;
+    if (isOccupied) return styles.seatOccupied;
+    if (seat.category === 'extra_legroom') return styles.seatLegroom;
+    if (seat.category === 'premium') return styles.seatPremium;
+    return styles.seatStandard;
   };
 
-  const renderContent = () => {
-    // 1. Active Passenger Selected
+  const renderSeatContent = () => {
     if (isSelectedActive) {
       return (
-        <View style={styles.centerBox}>
-          <Text style={styles.seatIdTextActive}>{seat.id}</Text>
-          <View style={styles.badgeActive}>
-            <Check size={11} color="#FFFFFF" strokeWidth={3} />
+        <View style={styles.centerCol}>
+          <Text style={styles.seatLabelActive}>{seat.id}</Text>
+          <View style={styles.activeCheckCircle}>
+            <Check size={9} color="#FFFFFF" strokeWidth={3} />
           </View>
         </View>
       );
     }
 
-    // 2. Assigned to another passenger in current booking
     if (isAssignedOther) {
       const initials = assignedPassenger?.name
         ? assignedPassenger.name
@@ -81,54 +60,52 @@ export const SeatItem: React.FC<SeatItemProps> = ({
         : 'PAX';
 
       return (
-        <View style={styles.centerBox}>
-          <Text style={styles.seatIdTextOther}>{seat.id}</Text>
+        <View style={styles.centerCol}>
+          <Text style={styles.seatLabelOther}>{seat.id}</Text>
           <View
             style={[
-              styles.badgeOther,
+              styles.otherBadge,
               assignedPassenger?.avatarColor
                 ? { backgroundColor: assignedPassenger.avatarColor }
                 : undefined,
             ]}
           >
-            <Text style={styles.initialsText}>{initials}</Text>
+            <Text style={styles.otherInitials}>{initials}</Text>
           </View>
         </View>
       );
     }
 
-    // 3. Occupied by another traveler on this flight
     if (isOccupied) {
       return (
-        <View style={styles.centerBox}>
-          <Text style={styles.seatIdTextOccupied}>{seat.id}</Text>
-          <X size={11} color="#94A3B8" strokeWidth={2.5} />
+        <View style={styles.centerCol}>
+          <Text style={styles.seatLabelOccupied}>{seat.id}</Text>
+          <X size={10} color="#94A3B8" strokeWidth={2.5} />
         </View>
       );
     }
 
-    // 4. Available Seat (Free or Paid)
-    const priceDisplay = seat.price === 0 ? '₹0' : `₹${seat.price}`;
-
+    // Available Free or Paid
+    const priceText = seat.price === 0 ? '₹0' : `₹${seat.price}`;
     return (
-      <View style={styles.centerBox}>
+      <View style={styles.centerCol}>
         <Text
           style={[
-            styles.seatIdText,
-            seat.category === 'extra_legroom' && styles.seatIdTextLegroom,
-            seat.category === 'premium' && styles.seatIdTextPremium,
+            styles.seatLabel,
+            seat.category === 'extra_legroom' && styles.seatLabelLegroom,
+            seat.category === 'premium' && styles.seatLabelPremium,
           ]}
         >
           {seat.id}
         </Text>
         <Text
           style={[
-            styles.priceTag,
-            seat.category === 'extra_legroom' && styles.priceTagLegroom,
-            seat.category === 'premium' && styles.priceTagPremium,
+            styles.seatPrice,
+            seat.category === 'extra_legroom' && styles.seatPriceLegroom,
+            seat.category === 'premium' && styles.seatPricePremium,
           ]}
         >
-          {priceDisplay}
+          {priceText}
         </Text>
       </View>
     );
@@ -137,37 +114,37 @@ export const SeatItem: React.FC<SeatItemProps> = ({
   return (
     <TouchableOpacity
       style={[
-        getContainerStyle(),
-        compact && styles.seatCompact,
+        styles.seatBase,
+        getSeatStyle(),
+        compact ? styles.seatBaseCompact : styles.seatBaseStandard,
       ]}
       onPress={handlePress}
       disabled={isOccupied}
       activeOpacity={0.7}
-      accessibilityLabel={`Seat ${seat.id}, ${seat.category}, ${
-        seat.price === 0 ? 'Free' : `₹${seat.price}`
-      }, ${status}`}
+      accessibilityLabel={`Seat ${seat.id}, ${seat.category}, ₹${seat.price}, ${status}`}
     >
-      {/* Visual seat cushion headrest accent */}
+      {/* Cushioned Headrest Feature */}
       <View
         style={[
           styles.headrest,
           isSelectedActive && styles.headrestActive,
           isOccupied && styles.headrestOccupied,
+          seat.category === 'extra_legroom' && !isSelectedActive && styles.headrestLegroom,
+          seat.category === 'premium' && !isSelectedActive && styles.headrestPremium,
         ]}
       />
-      {renderContent()}
+
+      {/* Main Seat Body */}
+      {renderSeatContent()}
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  seat: {
-    width: 38,
-    height: 44,
-    borderRadius: 7,
+  seatBase: {
+    borderRadius: 8,
     borderWidth: 1.5,
-    marginHorizontal: 2.5,
-    marginVertical: 4,
+    marginVertical: 3,
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 3,
@@ -175,18 +152,23 @@ const styles = StyleSheet.create({
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 1,
+    shadowRadius: 2,
     elevation: 1,
   },
-  seatCompact: {
-    width: 33,
-    height: 42,
+  seatBaseStandard: {
+    width: 38,
+    height: 45,
+    marginHorizontal: 2.5,
+  },
+  seatBaseCompact: {
+    width: 32,
+    height: 43,
     marginHorizontal: 1.5,
   },
   headrest: {
-    width: 18,
-    height: 3,
-    borderRadius: 1.5,
+    width: 20,
+    height: 3.5,
+    borderRadius: 2,
     backgroundColor: '#CBD5E1',
     marginBottom: 1,
   },
@@ -196,21 +178,27 @@ const styles = StyleSheet.create({
   headrestOccupied: {
     backgroundColor: '#E2E8F0',
   },
-  centerBox: {
+  headrestLegroom: {
+    backgroundColor: '#FCD34D',
+  },
+  headrestPremium: {
+    backgroundColor: '#C4B5FD',
+  },
+  centerCol: {
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
   },
-  // Seat state variations
+  // Seat Theme Variations
   seatStandard: {
     backgroundColor: '#FFFFFF',
     borderColor: '#94A3B8',
   },
   seatPremium: {
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#FAF5FF',
     borderColor: '#7C3AED',
   },
-  seatExtraLegroom: {
+  seatLegroom: {
     backgroundColor: '#FFFBEB',
     borderColor: '#D97706',
   },
@@ -220,65 +208,71 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
   },
-  seatSelectedActive: {
+  seatActive: {
     backgroundColor: '#0F172A',
     borderColor: '#0F172A',
     shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 4,
   },
-  seatAssignedOther: {
+  seatAssigned: {
     backgroundColor: '#F8FAFC',
     borderColor: '#64748B',
     borderStyle: 'dashed',
   },
-  // Text stylings
-  seatIdText: {
+  // Labels
+  seatLabel: {
     fontSize: 10,
     fontWeight: '700',
     color: '#334155',
   },
-  seatIdTextPremium: {
-    color: '#6D28D9',
-  },
-  seatIdTextLegroom: {
+  seatLabelLegroom: {
     color: '#B45309',
   },
-  seatIdTextActive: {
+  seatLabelPremium: {
+    color: '#6D28D9',
+  },
+  seatLabelActive: {
     fontSize: 10,
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  seatIdTextOther: {
+  seatLabelOther: {
     fontSize: 9,
     fontWeight: '700',
     color: '#64748B',
   },
-  seatIdTextOccupied: {
+  seatLabelOccupied: {
     fontSize: 9,
     fontWeight: '600',
     color: '#94A3B8',
   },
-  priceTag: {
+  seatPrice: {
     fontSize: 8,
     fontWeight: '600',
     color: '#64748B',
     marginTop: 1,
   },
-  priceTagPremium: {
+  seatPriceLegroom: {
+    color: '#B45309',
+    fontWeight: '800',
+  },
+  seatPricePremium: {
     color: '#7C3AED',
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  priceTagLegroom: {
-    color: '#D97706',
-    fontWeight: '700',
-  },
-  badgeActive: {
+  activeCheckCircle: {
     marginTop: 2,
+    width: 13,
+    height: 13,
+    borderRadius: 6.5,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  badgeOther: {
+  otherBadge: {
     width: 14,
     height: 14,
     borderRadius: 7,
@@ -287,10 +281,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 2,
   },
-  initialsText: {
+  otherInitials: {
     fontSize: 7,
     fontWeight: '800',
     color: '#FFFFFF',
   },
 });
-

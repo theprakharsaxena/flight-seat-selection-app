@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { ArrowUp, DoorOpen } from 'lucide-react-native';
+import { ArrowUp, ShieldAlert, DoorOpen } from 'lucide-react-native';
 import { CabinLayoutType, Passenger, SeatDefinition, SeatStatus } from '../types';
 import {
   LAYOUT_3_2_CONFIG,
@@ -12,7 +12,7 @@ import { SeatItem } from './SeatItem';
 interface SeatMapProps {
   layout: CabinLayoutType;
   activePassenger: Passenger;
-  seatAssignments: Record<string, string>; // passengerId -> seatId in active layout
+  seatAssignments: Record<string, string>;
   validPassengers: Passenger[];
   onSelectSeat: (seatId: string) => void;
   getPassengerForSeat: (seatId: string) => Passenger | null;
@@ -30,7 +30,6 @@ export const SeatMap: React.FC<SeatMapProps> = ({
   const config = is3_2 ? LAYOUT_3_2_CONFIG : LAYOUT_2_3_2_CONFIG;
   const seats = SEATS_BY_LAYOUT[layout];
 
-  // Group seats by row
   const rowMap = React.useMemo(() => {
     const map = new Map<number, Map<string, SeatDefinition>>();
     seats.forEach((seat) => {
@@ -57,10 +56,10 @@ export const SeatMap: React.FC<SeatMapProps> = ({
     return 'available';
   };
 
-  const renderAisleRowIndicator = (rowNum: number) => {
+  const renderAisleMarker = (rowNum: number) => {
     return (
-      <View style={styles.aisleIndicator}>
-        <Text style={styles.rowNumberText}>{rowNum}</Text>
+      <View style={styles.aisleBadge}>
+        <Text style={styles.aisleText}>{rowNum}</Text>
       </View>
     );
   };
@@ -68,243 +67,243 @@ export const SeatMap: React.FC<SeatMapProps> = ({
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={true}
     >
-      {/* Aircraft Nose & Cockpit Indicator */}
-      <View style={styles.cockpitCone}>
-        <View style={styles.coneGraphic} />
-        <View style={styles.frontBadge}>
-          <ArrowUp size={13} color="#475569" strokeWidth={2.5} />
-          <Text style={styles.frontText}>FRONT OF AIRCRAFT</Text>
+      {/* Aerodynamic Cockpit Nose */}
+      <View style={styles.noseSection}>
+        <View style={styles.noseCurve}>
+          <View style={styles.cockpitGlassRow}>
+            <View style={styles.cockpitWindow} />
+            <View style={styles.cockpitWindowCenter} />
+            <View style={styles.cockpitWindow} />
+          </View>
+        </View>
+        <View style={styles.exitIndicatorFront}>
+          <ArrowUp size={11} color="#64748B" strokeWidth={2.5} />
+          <Text style={styles.exitIndicatorText}>FRONT • EXIT DOORS</Text>
         </View>
       </View>
 
-      {/* Column Letters Header */}
-      <View style={styles.columnHeaderRow}>
-        {is3_2 ? (
-          <>
-            <View style={styles.columnGroupLeft}>
-              {LAYOUT_3_2_CONFIG.leftGroup.map((col) => (
-                <View key={col} style={styles.colHeaderBox}>
-                  <Text style={styles.colHeaderText}>{col}</Text>
-                </View>
-              ))}
-            </View>
+      {/* Main Aircraft Fuselage Container */}
+      <View style={styles.fuselageWrapper}>
+        {/* Fuselage Left Wall with Windows */}
+        <View style={styles.fuselageWallLeft}>
+          {Array.from({ length: config.totalRows }, (_, i) => (
+            <View key={i} style={styles.windowHole} />
+          ))}
+        </View>
 
-            <View style={styles.aisleHeaderBox}>
-              <Text style={styles.aisleHeaderText}>Aisle</Text>
-            </View>
-
-            <View style={styles.columnGroupRight}>
-              {LAYOUT_3_2_CONFIG.rightGroup.map((col) => (
-                <View key={col} style={styles.colHeaderBox}>
-                  <Text style={styles.colHeaderText}>{col}</Text>
-                </View>
-              ))}
-            </View>
-          </>
-        ) : (
-          <>
-            <View style={styles.columnGroupLeft}>
-              {LAYOUT_2_3_2_CONFIG.leftGroup.map((col) => (
-                <View key={col} style={styles.colHeaderBoxCompact}>
-                  <Text style={styles.colHeaderText}>{col}</Text>
-                </View>
-              ))}
-            </View>
-
-            <View style={styles.aisleHeaderBoxCompact}>
-              <Text style={styles.aisleHeaderText}>Aisle</Text>
-            </View>
-
-            <View style={styles.columnGroupMiddle}>
-              {LAYOUT_2_3_2_CONFIG.middleGroup.map((col) => (
-                <View key={col} style={styles.colHeaderBoxCompact}>
-                  <Text style={styles.colHeaderText}>{col}</Text>
-                </View>
-              ))}
-            </View>
-
-            <View style={styles.aisleHeaderBoxCompact}>
-              <Text style={styles.aisleHeaderText}>Aisle</Text>
-            </View>
-
-            <View style={styles.columnGroupRight}>
-              {LAYOUT_2_3_2_CONFIG.rightGroup.map((col) => (
-                <View key={col} style={styles.colHeaderBoxCompact}>
-                  <Text style={styles.colHeaderText}>{col}</Text>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-      </View>
-
-      {/* Fuselage Cabin Rows */}
-      <View style={styles.cabinFuselage}>
-        {Array.from({ length: config.totalRows }, (_, i) => i + 1).map((rowNum) => {
-          const rowSeats = rowMap.get(rowNum);
-          if (!rowSeats) return null;
-
-          const isExitRow = config.exitRows.includes(rowNum);
-          const isOverWing = config.wingRows.includes(rowNum);
-
-          return (
-            <React.Fragment key={rowNum}>
-              {/* Emergency Exit Row Notice */}
-              {isExitRow && (
-                <View style={styles.exitRowBanner}>
-                  <DoorOpen size={13} color="#B45309" />
-                  <Text style={styles.exitRowBannerText}>
-                    EMERGENCY EXIT ROW • EXTRA LEGROOM
-                  </Text>
-                  <DoorOpen size={13} color="#B45309" />
-                </View>
-              )}
-
-              <View style={[styles.rowContainer, isExitRow && styles.rowContainerExit]}>
-                {/* Wing marker indicator on outer sides */}
-                {isOverWing && <View style={styles.wingLeft} />}
-
-                {is3_2 ? (
-                  /* 3 - 2 Row Structure */
-                  <View style={styles.seatRow}>
-                    {/* Left: A, B, C */}
-                    <View style={styles.cluster}>
-                      {LAYOUT_3_2_CONFIG.leftGroup.map((col) => {
-                        const seat = rowSeats.get(col);
-                        if (!seat) return null;
-                        const status = getSeatStatus(seat);
-                        const assignedPax = getPassengerForSeat(seat.id);
-
-                        return (
-                          <SeatItem
-                            key={seat.id}
-                            seat={seat}
-                            status={status}
-                            assignedPassenger={assignedPax}
-                            activePassenger={activePassenger}
-                            onSelect={onSelectSeat}
-                            compact={false}
-                          />
-                        );
-                      })}
+        {/* Interior Cabin */}
+        <View style={styles.cabinInterior}>
+          {/* Column Header */}
+          <View style={styles.columnHeaderRow}>
+            {is3_2 ? (
+              <>
+                <View style={styles.colGroup}>
+                  {LAYOUT_3_2_CONFIG.leftGroup.map((col) => (
+                    <View key={col} style={styles.colBoxStandard}>
+                      <Text style={styles.colHeaderText}>{col}</Text>
                     </View>
+                  ))}
+                </View>
 
-                    {/* Single Central Aisle */}
-                    {renderAisleRowIndicator(rowNum)}
+                <View style={styles.aisleHeaderSpacer}>
+                  <Text style={styles.aisleHeaderLabel}>Aisle</Text>
+                </View>
 
-                    {/* Right: D, E */}
-                    <View style={styles.cluster}>
-                      {LAYOUT_3_2_CONFIG.rightGroup.map((col) => {
-                        const seat = rowSeats.get(col);
-                        if (!seat) return null;
-                        const status = getSeatStatus(seat);
-                        const assignedPax = getPassengerForSeat(seat.id);
-
-                        return (
-                          <SeatItem
-                            key={seat.id}
-                            seat={seat}
-                            status={status}
-                            assignedPassenger={assignedPax}
-                            activePassenger={activePassenger}
-                            onSelect={onSelectSeat}
-                            compact={false}
-                          />
-                        );
-                      })}
+                <View style={styles.colGroup}>
+                  {LAYOUT_3_2_CONFIG.rightGroup.map((col) => (
+                    <View key={col} style={styles.colBoxStandard}>
+                      <Text style={styles.colHeaderText}>{col}</Text>
                     </View>
-                  </View>
-                ) : (
-                  /* 2 - 3 - 2 Row Structure */
-                  <View style={styles.seatRow}>
-                    {/* Left: A, B */}
-                    <View style={styles.cluster}>
-                      {LAYOUT_2_3_2_CONFIG.leftGroup.map((col) => {
-                        const seat = rowSeats.get(col);
-                        if (!seat) return null;
-                        const status = getSeatStatus(seat);
-                        const assignedPax = getPassengerForSeat(seat.id);
-
-                        return (
-                          <SeatItem
-                            key={seat.id}
-                            seat={seat}
-                            status={status}
-                            assignedPassenger={assignedPax}
-                            activePassenger={activePassenger}
-                            onSelect={onSelectSeat}
-                            compact={true}
-                          />
-                        );
-                      })}
+                  ))}
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.colGroup}>
+                  {LAYOUT_2_3_2_CONFIG.leftGroup.map((col) => (
+                    <View key={col} style={styles.colBoxCompact}>
+                      <Text style={styles.colHeaderText}>{col}</Text>
                     </View>
+                  ))}
+                </View>
 
-                    {/* Aisle 1 */}
-                    {renderAisleRowIndicator(rowNum)}
+                <View style={styles.aisleHeaderSpacerCompact}>
+                  <Text style={styles.aisleHeaderLabel}>Aisle</Text>
+                </View>
 
-                    {/* Middle: C, D, E */}
-                    <View style={styles.cluster}>
-                      {LAYOUT_2_3_2_CONFIG.middleGroup.map((col) => {
-                        const seat = rowSeats.get(col);
-                        if (!seat) return null;
-                        const status = getSeatStatus(seat);
-                        const assignedPax = getPassengerForSeat(seat.id);
-
-                        return (
-                          <SeatItem
-                            key={seat.id}
-                            seat={seat}
-                            status={status}
-                            assignedPassenger={assignedPax}
-                            activePassenger={activePassenger}
-                            onSelect={onSelectSeat}
-                            compact={true}
-                          />
-                        );
-                      })}
+                <View style={styles.colGroup}>
+                  {LAYOUT_2_3_2_CONFIG.middleGroup.map((col) => (
+                    <View key={col} style={styles.colBoxCompact}>
+                      <Text style={styles.colHeaderText}>{col}</Text>
                     </View>
+                  ))}
+                </View>
 
-                    {/* Aisle 2 */}
-                    {renderAisleRowIndicator(rowNum)}
+                <View style={styles.aisleHeaderSpacerCompact}>
+                  <Text style={styles.aisleHeaderLabel}>Aisle</Text>
+                </View>
 
-                    {/* Right: F, G */}
-                    <View style={styles.cluster}>
-                      {LAYOUT_2_3_2_CONFIG.rightGroup.map((col) => {
-                        const seat = rowSeats.get(col);
-                        if (!seat) return null;
-                        const status = getSeatStatus(seat);
-                        const assignedPax = getPassengerForSeat(seat.id);
-
-                        return (
-                          <SeatItem
-                            key={seat.id}
-                            seat={seat}
-                            status={status}
-                            assignedPassenger={assignedPax}
-                            activePassenger={activePassenger}
-                            onSelect={onSelectSeat}
-                            compact={true}
-                          />
-                        );
-                      })}
+                <View style={styles.colGroup}>
+                  {LAYOUT_2_3_2_CONFIG.rightGroup.map((col) => (
+                    <View key={col} style={styles.colBoxCompact}>
+                      <Text style={styles.colHeaderText}>{col}</Text>
                     </View>
+                  ))}
+                </View>
+              </>
+            )}
+          </View>
+
+          {/* Seat Rows */}
+          {Array.from({ length: config.totalRows }, (_, i) => i + 1).map((rowNum) => {
+            const rowSeats = rowMap.get(rowNum);
+            if (!rowSeats) return null;
+
+            const isExitRow = config.exitRows.includes(rowNum);
+            const isOverWing = config.wingRows.includes(rowNum);
+
+            return (
+              <React.Fragment key={rowNum}>
+                {isExitRow && (
+                  <View style={styles.exitRowDivider}>
+                    <DoorOpen size={11} color="#B45309" />
+                    <Text style={styles.exitRowLabel}>
+                      EXIT ROW • EXTRA LEGROOM
+                    </Text>
+                    <DoorOpen size={11} color="#B45309" />
                   </View>
                 )}
 
-                {isOverWing && <View style={styles.wingRight} />}
-              </View>
-            </React.Fragment>
-          );
-        })}
+                <View
+                  style={[
+                    styles.rowContainer,
+                    isExitRow && styles.rowExitHighlight,
+                  ]}
+                >
+                  {is3_2 ? (
+                    /* 3–2 Layout */
+                    <View style={styles.seatsRow}>
+                      <View style={styles.cluster}>
+                        {LAYOUT_3_2_CONFIG.leftGroup.map((col) => {
+                          const seat = rowSeats.get(col);
+                          if (!seat) return null;
+                          return (
+                            <SeatItem
+                              key={seat.id}
+                              seat={seat}
+                              status={getSeatStatus(seat)}
+                              assignedPassenger={getPassengerForSeat(seat.id)}
+                              activePassenger={activePassenger}
+                              onSelect={onSelectSeat}
+                              compact={false}
+                            />
+                          );
+                        })}
+                      </View>
+
+                      {renderAisleMarker(rowNum)}
+
+                      <View style={styles.cluster}>
+                        {LAYOUT_3_2_CONFIG.rightGroup.map((col) => {
+                          const seat = rowSeats.get(col);
+                          if (!seat) return null;
+                          return (
+                            <SeatItem
+                              key={seat.id}
+                              seat={seat}
+                              status={getSeatStatus(seat)}
+                              assignedPassenger={getPassengerForSeat(seat.id)}
+                              activePassenger={activePassenger}
+                              onSelect={onSelectSeat}
+                              compact={false}
+                            />
+                          );
+                        })}
+                      </View>
+                    </View>
+                  ) : (
+                    /* 2–3–2 Layout */
+                    <View style={styles.seatsRow}>
+                      <View style={styles.cluster}>
+                        {LAYOUT_2_3_2_CONFIG.leftGroup.map((col) => {
+                          const seat = rowSeats.get(col);
+                          if (!seat) return null;
+                          return (
+                            <SeatItem
+                              key={seat.id}
+                              seat={seat}
+                              status={getSeatStatus(seat)}
+                              assignedPassenger={getPassengerForSeat(seat.id)}
+                              activePassenger={activePassenger}
+                              onSelect={onSelectSeat}
+                              compact={true}
+                            />
+                          );
+                        })}
+                      </View>
+
+                      {renderAisleMarker(rowNum)}
+
+                      <View style={styles.cluster}>
+                        {LAYOUT_2_3_2_CONFIG.middleGroup.map((col) => {
+                          const seat = rowSeats.get(col);
+                          if (!seat) return null;
+                          return (
+                            <SeatItem
+                              key={seat.id}
+                              seat={seat}
+                              status={getSeatStatus(seat)}
+                              assignedPassenger={getPassengerForSeat(seat.id)}
+                              activePassenger={activePassenger}
+                              onSelect={onSelectSeat}
+                              compact={true}
+                            />
+                          );
+                        })}
+                      </View>
+
+                      {renderAisleMarker(rowNum)}
+
+                      <View style={styles.cluster}>
+                        {LAYOUT_2_3_2_CONFIG.rightGroup.map((col) => {
+                          const seat = rowSeats.get(col);
+                          if (!seat) return null;
+                          return (
+                            <SeatItem
+                              key={seat.id}
+                              seat={seat}
+                              status={getSeatStatus(seat)}
+                              assignedPassenger={getPassengerForSeat(seat.id)}
+                              activePassenger={activePassenger}
+                              onSelect={onSelectSeat}
+                              compact={true}
+                            />
+                          );
+                        })}
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </React.Fragment>
+            );
+          })}
+        </View>
+
+        {/* Fuselage Right Wall with Windows */}
+        <View style={styles.fuselageWallRight}>
+          {Array.from({ length: config.totalRows }, (_, i) => (
+            <View key={i} style={styles.windowHole} />
+          ))}
+        </View>
       </View>
 
-      {/* Rear Cabin Galley & Exit */}
-      <View style={styles.rearGalley}>
-        <View style={styles.rearDivider} />
-        <Text style={styles.rearText}>REAR GALLEY & RESTROOMS</Text>
+      {/* Rear Galley */}
+      <View style={styles.rearSection}>
+        <View style={styles.rearBar} />
+        <Text style={styles.rearText}>REAR GALLEY & LAVATORIES</Text>
       </View>
     </ScrollView>
   );
@@ -313,195 +312,205 @@ export const SeatMap: React.FC<SeatMapProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F1F5F9',
   },
-  contentContainer: {
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 32,
+  scrollContent: {
     alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 36,
   },
-  cockpitCone: {
+  noseSection: {
     alignItems: 'center',
-    marginBottom: 12,
-    width: '100%',
+    marginBottom: 6,
   },
-  coneGraphic: {
-    width: 90,
-    height: 18,
-    borderTopLeftRadius: 45,
-    borderTopRightRadius: 45,
+  noseCurve: {
+    width: 130,
+    height: 38,
+    borderTopLeftRadius: 65,
+    borderTopRightRadius: 65,
+    backgroundColor: '#FFFFFF',
     borderWidth: 2,
     borderBottomWidth: 0,
     borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 10,
   },
-  frontBadge: {
+  cockpitGlassRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
-  frontText: {
-    fontSize: 10,
+  cockpitWindow: {
+    width: 14,
+    height: 9,
+    borderRadius: 3,
+    backgroundColor: '#0F172A',
+    marginHorizontal: 3,
+  },
+  cockpitWindowCenter: {
+    width: 20,
+    height: 10,
+    borderRadius: 3,
+    backgroundColor: '#0F172A',
+    marginHorizontal: 3,
+  },
+  exitIndicatorFront: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  exitIndicatorText: {
+    fontSize: 9,
     fontWeight: '700',
     color: '#475569',
-    letterSpacing: 0.6,
-    marginLeft: 4,
+    letterSpacing: 0.8,
+    marginLeft: 3,
+  },
+  fuselageWrapper: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    backgroundColor: '#E2E8F0',
+    borderRadius: 24,
+    padding: 3,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  fuselageWallLeft: {
+    width: 12,
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingVertical: 30,
+  },
+  fuselageWallRight: {
+    width: 12,
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingVertical: 30,
+  },
+  windowHole: {
+    width: 6,
+    height: 11,
+    borderRadius: 3,
+    backgroundColor: '#94A3B8',
+    marginVertical: 10,
+  },
+  cabinInterior: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
   },
   columnHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
-    paddingHorizontal: 10,
-    width: '100%',
+    paddingHorizontal: 4,
   },
-  columnGroupLeft: {
+  colGroup: {
     flexDirection: 'row',
   },
-  columnGroupMiddle: {
-    flexDirection: 'row',
-  },
-  columnGroupRight: {
-    flexDirection: 'row',
-  },
-  colHeaderBox: {
+  colBoxStandard: {
     width: 38,
     marginHorizontal: 2.5,
     alignItems: 'center',
   },
-  colHeaderBoxCompact: {
-    width: 33,
+  colBoxCompact: {
+    width: 32,
     marginHorizontal: 1.5,
     alignItems: 'center',
   },
   colHeaderText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#64748B',
   },
-  aisleHeaderBox: {
-    width: 28,
+  aisleHeaderSpacer: {
+    width: 24,
     alignItems: 'center',
+    marginHorizontal: 2,
   },
-  aisleHeaderBoxCompact: {
-    width: 22,
+  aisleHeaderSpacerCompact: {
+    width: 20,
     alignItems: 'center',
+    marginHorizontal: 2,
   },
-  aisleHeaderText: {
+  aisleHeaderLabel: {
     fontSize: 8,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#94A3B8',
     textTransform: 'uppercase',
   },
-  cabinFuselage: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    alignItems: 'center',
-  },
   rowContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    position: 'relative',
     marginVertical: 1,
+    borderRadius: 6,
   },
-  rowContainerExit: {
+  rowExitHighlight: {
     backgroundColor: '#FFFBEB',
-    borderRadius: 8,
-    paddingVertical: 2,
-    marginVertical: 4,
   },
-  seatRow: {
+  seatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   cluster: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  aisleIndicator: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#F1F5F9',
+  aisleBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 3,
+    marginHorizontal: 2,
   },
-  rowNumberText: {
+  aisleText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#64748B',
   },
-  exitRowBanner: {
+  exitRowDivider: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FEF3C7',
-    paddingVertical: 3,
-    paddingHorizontal: 8,
+    paddingVertical: 2,
     borderRadius: 4,
-    marginVertical: 4,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
+    marginVertical: 3,
   },
-  exitRowBannerText: {
-    fontSize: 9,
-    fontWeight: '700',
+  exitRowLabel: {
+    fontSize: 8,
+    fontWeight: '800',
     color: '#B45309',
     marginHorizontal: 6,
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
   },
-  wingLeft: {
-    position: 'absolute',
-    left: -12,
-    width: 8,
-    height: 38,
-    backgroundColor: '#CBD5E1',
-    borderTopLeftRadius: 4,
-    borderBottomLeftRadius: 4,
-  },
-  wingRight: {
-    position: 'absolute',
-    right: -12,
-    width: 8,
-    height: 38,
-    backgroundColor: '#CBD5E1',
-    borderTopRightRadius: 4,
-    borderBottomRightRadius: 4,
-  },
-  rearGalley: {
+  rearSection: {
     alignItems: 'center',
-    marginTop: 16,
-    width: '100%',
+    marginTop: 14,
   },
-  rearDivider: {
-    width: 140,
+  rearBar: {
+    width: 120,
     height: 3,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 1.5,
+    backgroundColor: '#CBD5E1',
+    borderRadius: 2,
     marginBottom: 6,
   },
   rearText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: '#94A3B8',
     letterSpacing: 0.8,
   },
 });
-

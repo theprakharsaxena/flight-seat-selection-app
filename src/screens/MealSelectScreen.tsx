@@ -29,17 +29,17 @@ export const MealSelectScreen: React.FC = () => {
   const getDietaryIcon = (meal: MealOption) => {
     switch (meal.id) {
       case 'meal-none':
-        return <Coffee size={18} color="#64748B" />;
+        return <Coffee size={16} color="#64748B" />;
       case 'meal-veg':
-        return <Leaf size={18} color="#059669" />;
+        return <Leaf size={16} color="#059669" />;
       case 'meal-nonveg':
-        return <Drumstick size={18} color="#DC2626" />;
+        return <Drumstick size={16} color="#DC2626" />;
       case 'meal-vegan':
-        return <Sparkles size={18} color="#0D9488" />;
+        return <Sparkles size={16} color="#0D9488" />;
       case 'meal-jain':
-        return <ShieldAlert size={18} color="#D97706" />;
+        return <ShieldAlert size={16} color="#D97706" />;
       default:
-        return <Utensils size={18} color="#2563EB" />;
+        return <Utensils size={16} color="#2563EB" />;
     }
   };
 
@@ -49,13 +49,13 @@ export const MealSelectScreen: React.FC = () => {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Passenger Selection Header */}
-      <View style={styles.paxHeaderSection}>
-        <Text style={styles.sectionTitle}>SELECTING MEAL FOR PASSENGER</Text>
+      {/* Traveler Selector Strip */}
+      <View style={styles.travelerHeader}>
+        <Text style={styles.sectionTitle}>SELECTING MEAL FOR</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.paxScroll}
+          contentContainerStyle={styles.travelerScroll}
         >
           {validPassengers.map((pax) => {
             const isActive = pax.id === activePassenger.id;
@@ -65,30 +65,27 @@ export const MealSelectScreen: React.FC = () => {
             return (
               <TouchableOpacity
                 key={pax.id}
-                style={[styles.paxTab, isActive && styles.paxTabActive]}
+                style={[styles.paxChip, isActive && styles.paxChipActive]}
                 onPress={() => setActivePassengerId(pax.id)}
                 activeOpacity={0.8}
               >
                 <View
                   style={[
-                    styles.paxAvatar,
+                    styles.avatarMini,
                     { backgroundColor: pax.avatarColor || '#2563EB' },
                   ]}
                 >
-                  <Text style={styles.paxAvatarText}>
-                    {pax.name
-                      .split(' ')
-                      .map((n) => n[0])
-                      .join('')
-                      .substring(0, 2)}
+                  <Text style={styles.avatarMiniText}>
+                    {pax.name.charAt(0)}
                   </Text>
                 </View>
-                <View style={styles.paxInfoCol}>
-                  <Text style={[styles.paxTabName, isActive && styles.paxTabNameActive]}>
+
+                <View style={styles.paxChipTextCol}>
+                  <Text style={[styles.paxChipName, isActive && styles.paxChipNameActive]}>
                     {pax.name.split(' ')[0]}
                   </Text>
-                  <Text style={styles.paxTabMealName} numberOfLines={1}>
-                    {selectedMeal?.price === 0 ? 'No Meal' : selectedMeal?.name.replace(' Meal', '')}
+                  <Text style={styles.paxChipMeal} numberOfLines={1}>
+                    {selectedMeal?.price === 0 ? 'No meal' : selectedMeal?.name.replace(' Meal', '')}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -97,17 +94,17 @@ export const MealSelectScreen: React.FC = () => {
         </ScrollView>
       </View>
 
-      {/* Active Passenger Title Banner */}
-      <View style={styles.activeNotice}>
-        <Text style={styles.activeNoticeTitle}>
-          In-flight Dining for {activePassenger.name}
+      {/* Menu Header Card */}
+      <View style={styles.menuNoticeCard}>
+        <Text style={styles.menuNoticeTitle}>
+          Dining Options for {activePassenger.name}
         </Text>
-        <Text style={styles.activeNoticeSub}>
-          Meals are prepared fresh and served along with beverage service after departure.
+        <Text style={styles.menuNoticeSub}>
+          Pre-ordered meals are served hot with beverage service after departure.
         </Text>
       </View>
 
-      {/* List of Meal Options */}
+      {/* Meal Option Cards */}
       <View style={styles.mealList}>
         {MEAL_OPTIONS.map((meal) => {
           const isSelected = currentMealId === meal.id;
@@ -119,44 +116,41 @@ export const MealSelectScreen: React.FC = () => {
               onPress={() => selectMeal(meal.id, activePassenger.id)}
               activeOpacity={0.85}
             >
-              <View style={styles.mealTopRow}>
-                {/* Meal Icon */}
+              <View style={styles.mealMainRow}>
                 <View
                   style={[
-                    styles.mealIconBox,
-                    isSelected && styles.mealIconBoxActive,
+                    styles.mealIconCircle,
+                    isSelected && styles.mealIconCircleActive,
                   ]}
                 >
                   {getDietaryIcon(meal)}
                 </View>
 
-                {/* Meal Title & Dietary Tag */}
-                <View style={styles.mealTitleBox}>
-                  <View style={styles.titleWithTag}>
+                <View style={styles.mealTextBody}>
+                  <View style={styles.nameAndTagRow}>
                     <Text style={[styles.mealName, isSelected && styles.mealNameActive]}>
                       {meal.name}
                     </Text>
                     {meal.dietaryTag && (
-                      <View style={styles.tagBadge}>
-                        <Text style={styles.tagText}>{meal.dietaryTag}</Text>
+                      <View style={styles.dietaryTagBadge}>
+                        <Text style={styles.dietaryTagText}>{meal.dietaryTag}</Text>
                       </View>
                     )}
                   </View>
-                  <Text style={styles.mealDescription}>{meal.description}</Text>
+                  <Text style={styles.mealDesc}>{meal.description}</Text>
                 </View>
 
-                {/* Price & Selection Checkmark */}
-                <View style={styles.priceColumn}>
-                  <Text style={[styles.mealPriceText, isSelected && styles.mealPriceTextActive]}>
+                <View style={styles.priceCol}>
+                  <Text style={[styles.priceTag, isSelected && styles.priceTagActive]}>
                     {meal.price === 0 ? 'Free' : `₹${meal.price}`}
                   </Text>
                   <View
                     style={[
-                      styles.radioCircle,
-                      isSelected && styles.radioCircleActive,
+                      styles.radioPill,
+                      isSelected && styles.radioPillActive,
                     ]}
                   >
-                    {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+                    {isSelected && <Check size={11} color="#FFFFFF" strokeWidth={3} />}
                   </View>
                 </View>
               </View>
@@ -177,86 +171,86 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 24,
   },
-  paxHeaderSection: {
-    marginBottom: 16,
+  travelerHeader: {
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.8,
-    marginBottom: 8,
+    marginBottom: 6,
     marginLeft: 2,
   },
-  paxScroll: {
+  travelerScroll: {
     paddingVertical: 2,
   },
-  paxTab: {
+  paxChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
     borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    marginRight: 8,
-    minWidth: 125,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    marginRight: 6,
+    minWidth: 110,
   },
-  paxTabActive: {
+  paxChipActive: {
     borderColor: '#2563EB',
     backgroundColor: '#EFF6FF',
   },
-  paxAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  avatarMini: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    marginRight: 6,
   },
-  paxAvatarText: {
-    fontSize: 11,
+  avatarMiniText: {
+    fontSize: 10,
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  paxInfoCol: {
+  paxChipTextCol: {
     flex: 1,
   },
-  paxTabName: {
-    fontSize: 13,
-    fontWeight: '600',
+  paxChipName: {
+    fontSize: 12,
+    fontWeight: '700',
     color: '#334155',
   },
-  paxTabNameActive: {
+  paxChipNameActive: {
     color: '#1E40AF',
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  paxTabMealName: {
-    fontSize: 10,
-    fontWeight: '500',
+  paxChipMeal: {
+    fontSize: 9,
+    fontWeight: '600',
     color: '#64748B',
     marginTop: 1,
   },
-  activeNotice: {
+  menuNoticeCard: {
     backgroundColor: '#F1F5F9',
     borderRadius: 10,
-    padding: 14,
-    marginBottom: 16,
+    padding: 12,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  activeNoticeTitle: {
-    fontSize: 14,
-    fontWeight: '700',
+  menuNoticeTitle: {
+    fontSize: 13,
+    fontWeight: '800',
     color: '#0F172A',
   },
-  activeNoticeSub: {
-    fontSize: 12,
+  menuNoticeSub: {
+    fontSize: 11,
     fontWeight: '400',
     color: '#64748B',
-    marginTop: 3,
-    lineHeight: 16,
+    marginTop: 2,
+    lineHeight: 15,
   },
   mealList: {
     marginBottom: 12,
@@ -266,100 +260,99 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    padding: 14,
-    marginBottom: 10,
+    padding: 12,
+    marginBottom: 8,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
-    shadowRadius: 3,
+    shadowRadius: 2,
     elevation: 1,
   },
   mealCardActive: {
     borderColor: '#0F172A',
     backgroundColor: '#F8FAFC',
   },
-  mealTopRow: {
+  mealMainRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
-  mealIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  mealIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
-  mealIconBoxActive: {
+  mealIconCircleActive: {
     backgroundColor: '#E2E8F0',
   },
-  mealTitleBox: {
+  mealTextBody: {
     flex: 1,
-    paddingRight: 8,
+    paddingRight: 6,
   },
-  titleWithTag: {
+  nameAndTagRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
   },
   mealName: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '800',
     color: '#0F172A',
   },
   mealNameActive: {
     color: '#0F172A',
   },
-  tagBadge: {
+  dietaryTagBadge: {
     backgroundColor: '#F1F5F9',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
     borderRadius: 4,
     marginLeft: 6,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  tagText: {
-    fontSize: 10,
-    fontWeight: '600',
+  dietaryTagText: {
+    fontSize: 9,
+    fontWeight: '700',
     color: '#475569',
   },
-  mealDescription: {
-    fontSize: 12,
+  mealDesc: {
+    fontSize: 11,
     fontWeight: '400',
     color: '#64748B',
-    marginTop: 4,
-    lineHeight: 16,
+    marginTop: 3,
+    lineHeight: 15,
   },
-  priceColumn: {
+  priceCol: {
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    minHeight: 46,
+    minHeight: 42,
   },
-  mealPriceText: {
-    fontSize: 14,
+  priceTag: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#334155',
   },
-  mealPriceTextActive: {
+  priceTagActive: {
     color: '#0F172A',
-    fontWeight: '800',
+    fontWeight: '900',
   },
-  radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+  radioPill: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     borderWidth: 1.5,
     borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-    marginTop: 8,
+    marginTop: 6,
   },
-  radioCircleActive: {
+  radioPillActive: {
     backgroundColor: '#0F172A',
     borderColor: '#0F172A',
   },
 });
-
