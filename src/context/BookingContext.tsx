@@ -47,6 +47,8 @@ interface BookingContextType {
   selectSeat: (seatId: string) => { success: boolean; message: string };
   removeSeat: (passengerId?: string) => void;
   selectMeal: (mealId: string, passengerId?: string) => void;
+  updatePassengerName: (passengerId: string, newName: string) => void;
+  removePassenger: (passengerId: string) => void;
   resetBooking: () => void;
   showToast: (message: string, type?: 'info' | 'success' | 'warning') => void;
   hideToast: () => void;
@@ -66,6 +68,7 @@ const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
 export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [passengerCount, setPassengerCountState] = useState<number>(2);
+  const [passengersList, setPassengersList] = useState<Passenger[]>(SAMPLE_PASSENGERS);
   const [activePassengerId, setActivePassengerIdState] = useState<string>('pax-1');
   const [activeLayout, setActiveLayoutState] = useState<CabinLayoutType>('3-2');
   const [currentStep, setCurrentStep] = useState<StepKey>('flight');
@@ -87,8 +90,8 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
   });
 
   const validPassengers = useMemo(() => {
-    return SAMPLE_PASSENGERS.slice(0, passengerCount);
-  }, [passengerCount]);
+    return passengersList.slice(0, passengerCount);
+  }, [passengersList, passengerCount]);
 
   const activePassenger = useMemo(() => {
     const found = validPassengers.find((p) => p.id === activePassengerId);
@@ -285,7 +288,62 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
+  const updatePassengerName = (passengerId: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      showToast('Passenger name cannot be empty', 'warning');
+      return;
+    }
+    setPassengersList((prev) =>
+      prev.map((p) => (p.id === passengerId ? { ...p, name: trimmed } : p))
+    );
+    showToast(`Updated name to ${trimmed}`, 'success');
+  };
+
+  const removePassenger = (passengerId: string) => {
+    if (passengerCount <= 1) {
+      showToast('At least 1 passenger is required for booking', 'warning');
+      return;
+    }
+
+    const paxToRemove = validPassengers.find((p) => p.id === passengerId);
+    const newCount = passengerCount - 1;
+
+    // Filter out the passenger and push to the end so roster stays 6 total
+    const remaining = passengersList.filter((p) => p.id !== passengerId);
+    if (paxToRemove) {
+      remaining.push(paxToRemove);
+    }
+
+    setPassengersList(remaining);
+    setPassengerCountState(newCount);
+
+    // Release seat assignments in both layouts
+    setSeatAssignments((prev) => {
+      const clean3_2 = { ...prev['3-2'] };
+      const clean2_3_2 = { ...prev['2-3-2'] };
+      delete clean3_2[passengerId];
+      delete clean2_3_2[passengerId];
+      return { '3-2': clean3_2, '2-3-2': clean2_3_2 };
+    });
+
+    // Release meal selection
+    setMealSelections((prev) => {
+      const cleanMeals = { ...prev };
+      delete cleanMeals[passengerId];
+      return cleanMeals;
+    });
+
+    // If active passenger was removed, reset active to first remaining
+    if (activePassengerId === passengerId) {
+      setActivePassengerIdState(remaining[0].id);
+    }
+
+    showToast(`Removed ${paxToRemove?.name || 'traveler'} from booking`, 'info');
+  };
+
   const resetBooking = () => {
+    setPassengersList(SAMPLE_PASSENGERS);
     setPassengerCountState(2);
     setActivePassengerIdState('pax-1');
     setActiveLayoutState('3-2');
@@ -381,6 +439,8 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
         selectSeat,
         removeSeat,
         selectMeal,
+        updatePassengerName,
+        removePassenger,
         resetBooking,
         showToast,
         hideToast,

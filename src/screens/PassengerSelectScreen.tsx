@@ -1,13 +1,29 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import {
   Plus,
   Minus,
   Armchair,
   Utensils,
   UserCheck,
+  Pencil,
+  Trash2,
+  X,
+  Check,
+  UserPlus,
 } from 'lucide-react-native';
 import { useBooking } from '../context/BookingContext';
+import { Passenger } from '../types';
 
 export const PassengerSelectScreen: React.FC = () => {
   const {
@@ -17,9 +33,16 @@ export const PassengerSelectScreen: React.FC = () => {
     setActivePassengerId,
     setPassengerCount,
     getSeatForPassenger,
+    updatePassengerName,
+    removePassenger,
+    showToast,
   } = useBooking();
 
   const { passengerCount, activeLayout, mealSelections } = state;
+
+  // Edit Name Modal State
+  const [editingPassenger, setEditingPassenger] = useState<Passenger | null>(null);
+  const [editedName, setEditedName] = useState<string>('');
 
   const handleIncrement = () => {
     if (passengerCount < 6) setPassengerCount(passengerCount + 1);
@@ -27,6 +50,23 @@ export const PassengerSelectScreen: React.FC = () => {
 
   const handleDecrement = () => {
     if (passengerCount > 1) setPassengerCount(passengerCount - 1);
+  };
+
+  const handleOpenEdit = (pax: Passenger, e: any) => {
+    e.stopPropagation();
+    setEditingPassenger(pax);
+    setEditedName(pax.name);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingPassenger) return;
+    updatePassengerName(editingPassenger.id, editedName);
+    setEditingPassenger(null);
+  };
+
+  const handleDeletePassenger = (pax: Passenger, e: any) => {
+    e.stopPropagation();
+    removePassenger(pax.id);
   };
 
   return (
@@ -55,7 +95,11 @@ export const PassengerSelectScreen: React.FC = () => {
               activeOpacity={0.7}
               accessibilityLabel="Decrease passenger count"
             >
-              <Minus size={16} color={passengerCount <= 1 ? '#CBD5E1' : '#0F172A'} strokeWidth={2.5} />
+              <Minus
+                size={16}
+                color={passengerCount <= 1 ? '#CBD5E1' : '#0F172A'}
+                strokeWidth={2.5}
+              />
             </TouchableOpacity>
 
             <View style={styles.stepperNumBox}>
@@ -70,7 +114,11 @@ export const PassengerSelectScreen: React.FC = () => {
               activeOpacity={0.7}
               accessibilityLabel="Increase passenger count"
             >
-              <Plus size={16} color={passengerCount >= 6 ? '#CBD5E1' : '#0F172A'} strokeWidth={2.5} />
+              <Plus
+                size={16}
+                color={passengerCount >= 6 ? '#CBD5E1' : '#0F172A'}
+                strokeWidth={2.5}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -99,7 +147,7 @@ export const PassengerSelectScreen: React.FC = () => {
       <View style={styles.rosterHeader}>
         <Text style={styles.rosterTitle}>TRAVELER ROSTER ({validPassengers.length})</Text>
         <Text style={styles.rosterSub}>
-          Tap any traveler to choose their seat and meal
+          Tap any card to set active, or tap edit/delete icons
         </Text>
       </View>
 
@@ -149,6 +197,36 @@ export const PassengerSelectScreen: React.FC = () => {
                 <Text style={styles.travelerMeta}>
                   Traveler {index + 1} • {passenger.code}
                 </Text>
+              </View>
+
+              {/* Action Buttons: Edit and Delete */}
+              <View style={styles.actionButtonsCol}>
+                <TouchableOpacity
+                  style={styles.iconActionBtn}
+                  onPress={(e) => handleOpenEdit(passenger, e)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityLabel={`Edit ${passenger.name}`}
+                >
+                  <Pencil size={14} color="#475569" strokeWidth={2} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.iconActionBtn,
+                    styles.iconActionBtnDelete,
+                    passengerCount <= 1 && styles.iconActionBtnDisabled,
+                  ]}
+                  onPress={(e) => handleDeletePassenger(passenger, e)}
+                  disabled={passengerCount <= 1}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityLabel={`Delete ${passenger.name}`}
+                >
+                  <Trash2
+                    size={14}
+                    color={passengerCount <= 1 ? '#CBD5E1' : '#EF4444'}
+                    strokeWidth={2}
+                  />
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -203,6 +281,81 @@ export const PassengerSelectScreen: React.FC = () => {
           </TouchableOpacity>
         );
       })}
+
+      {/* Add Another Passenger Button (when count < 6) */}
+      {passengerCount < 6 && (
+        <TouchableOpacity
+          style={styles.addPassengerRowBtn}
+          onPress={handleIncrement}
+          activeOpacity={0.8}
+        >
+          <UserPlus size={16} color="#2563EB" style={styles.addIcon} />
+          <Text style={styles.addPassengerText}>
+            Add Another Traveler ({6 - passengerCount} spots remaining)
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Edit Passenger Name Modal */}
+      <Modal
+        visible={editingPassenger !== null}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setEditingPassenger(null)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderLeft}>
+                <Pencil size={16} color="#0F172A" />
+                <Text style={styles.modalTitle}>Edit Passenger Name</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setEditingPassenger(null)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <X size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalInputLabel}>Full Name</Text>
+            <TextInput
+              style={styles.nameTextInput}
+              value={editedName}
+              onChangeText={setEditedName}
+              placeholder="Enter traveler full name"
+              placeholderTextColor="#94A3B8"
+              autoFocus={true}
+              autoCapitalize="words"
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={handleSaveEdit}
+            />
+
+            <View style={styles.modalActionsRow}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setEditingPassenger(null)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalSaveBtn}
+                onPress={handleSaveEdit}
+                activeOpacity={0.85}
+              >
+                <Check size={16} color="#FFFFFF" strokeWidth={2.5} style={styles.saveIco} />
+                <Text style={styles.modalSaveText}>Save Name</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </ScrollView>
   );
 };
@@ -396,6 +549,26 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 1,
   },
+  actionButtonsCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconActionBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
+  },
+  iconActionBtnDelete: {
+    backgroundColor: '#FEE2E2',
+  },
+  iconActionBtnDisabled: {
+    backgroundColor: '#F1F5F9',
+    opacity: 0.4,
+  },
   badgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -435,5 +608,111 @@ const styles = StyleSheet.create({
   badgeTextMeal: {
     color: '#059669',
     fontWeight: '700',
+  },
+  addPassengerRowBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  addIcon: {
+    marginRight: 6,
+  },
+  addPassengerText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 360,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  modalHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginLeft: 6,
+  },
+  modalInputLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  nameTextInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 16,
+  },
+  modalActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  modalCancelBtn: {
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  modalCancelText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  modalSaveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  saveIco: {
+    marginRight: 4,
+  },
+  modalSaveText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });
