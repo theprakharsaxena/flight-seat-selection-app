@@ -39,6 +39,9 @@ interface BookingContextType {
 
   // Actions
   setCurrentStep: (step: StepKey) => void;
+  goToStep: (step: StepKey) => boolean;
+  canProceedFromStep: (step: StepKey) => { allowed: boolean; reason?: string; unassignedPassenger?: Passenger };
+  canAccessStep: (targetStep: StepKey) => { allowed: boolean; blockedStep?: StepKey; reason?: string };
   nextStep: () => void;
   prevStep: () => void;
   setPassengerCount: (count: number) => void;
@@ -50,6 +53,9 @@ interface BookingContextType {
   updatePassengerName: (passengerId: string, newName: string) => void;
   removePassenger: (passengerId: string) => void;
   resetBooking: () => void;
+  isBookingConfirmed: boolean;
+  confirmBooking: () => void;
+  dismissConfirmation: () => void;
   showToast: (message: string, type?: 'info' | 'success' | 'warning') => void;
   hideToast: () => void;
 
@@ -71,8 +77,18 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [passengersList, setPassengersList] = useState<Passenger[]>(SAMPLE_PASSENGERS);
   const [activePassengerId, setActivePassengerIdState] = useState<string>('pax-1');
   const [activeLayout, setActiveLayoutState] = useState<CabinLayoutType>('3-2');
-  const [currentStep, setCurrentStep] = useState<StepKey>('flight');
+  const [currentStep, setCurrentStepState] = useState<StepKey>('flight');
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [isBookingConfirmed, setIsBookingConfirmed] = useState<boolean>(false);
+
+  const confirmBooking = () => {
+    setIsBookingConfirmed(true);
+    showToast('Seat selection confirmed successfully!', 'success');
+  };
+
+  const dismissConfirmation = () => {
+    setIsBookingConfirmed(false);
+  };
 
   // Independent seat assignments for each layout
   const [seatAssignments, setSeatAssignments] = useState<{
@@ -343,11 +359,12 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const resetBooking = () => {
+    setIsBookingConfirmed(false);
     setPassengersList(SAMPLE_PASSENGERS);
     setPassengerCountState(2);
     setActivePassengerIdState('pax-1');
     setActiveLayoutState('3-2');
-    setCurrentStep('flight');
+    setCurrentStepState('flight');
     setSeatAssignments({
       '3-2': {},
       '2-3-2': {},
@@ -396,18 +413,123 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
     return totalSeatCharges + totalMealCharges;
   }, [totalSeatCharges, totalMealCharges]);
 
+  // Step-by-step task validation
+  const canProceedFromStep = (
+    step: StepKey
+  ): { allowed: boolean; reason?: string; unassignedPassenger?: Passenger } => {
+    switch (step) {
+      case 'flight':
+        return { allowed: true };
+      case 'passengers': {
+        if (validPassengers.length < 1) {
+          return { allowed: false, reason: 'Please select at least 1 traveler' };
+        }
+        const emptyNamePax = validPassengers.find((p) => !p.name || p.name.trim().length === 0);
+        if (emptyNamePax) {
+          return { allowed: false, reason: 'Please ensure all travelers have valid names' };
+        }
+        return { allowed: true };
+      }
+      case 'seats': {
+        const currentAssignments = seatAssignments[activeLayout];
+        const unassigned = validPassengers.find((p) => !currentAssignments[p.id]);
+        if (unassigned) {
+          const assignedCount = validPassengers.filter((p) => Boolean(currentAssignments[p.id])).length;
+          return {
+            allowed: false,
+            reason: `Please select a seat for ${unassigned.name} (${assignedCount}/${validPassengers.length} assigned)`,
+            unassignedPassenger: unassigned,
+          };
+        }
+        return { allowed: true };
+      }
+      case 'meals': {
+        const missingMealPax = validPassengers.find((p) => !mealSelections[p.id]);
+        if (missingMealPax) {
+          return {
+            allowed: false,
+            reason: `Please select a meal preference for ${missingMealPax.name}`,
+          };
+        }
+        return { allowed: true };
+      }
+      case 'summary':
+        return { allowed: true };
+      default:
+        return { allowed: true };
+    }
+  };
+
+  const canAccessStep = (
+    targetStep: StepKey
+  ): { allowed: boolean; blockedStep?: StepKey; reason?: string } => {
+    const targetIndex = STEP_ORDER.indexOf(targetStep);
+    if (targetIndex <= 0) return { allowed: true };
+
+    for (let i = 0; i < targetIndex; i++) {
+      const stepKey = STEP_ORDER[i];
+      const check = canProceedFromStep(stepKey);
+      if (!check.allowed) {
+        return {
+          allowed: false,
+          blockedStep: stepKey,
+          reason: check.reason,
+        };
+      }
+    }
+    return { allowed: true };
+  };
+
+  // Safe navigation that blocks skipping steps if tasks are incomplete
+  const goToStep = (targetStep: StepKey): boolean => {
+    if (targetStep === currentStep) return true;
+
+    const currentIndex = STEP_ORDER.indexOf(currentStep);
+    const targetIndex = STEP_ORDER.indexOf(targetStep);
+
+    // Moving backward to earlier screens is always permitted
+    if (targetIndex < currentIndex) {
+      setCurrentStepState(targetStep);
+      return true;
+    }
+
+    // Moving forward: validate each intermediate step
+    for (let i = 0; i < targetIndex; i++) {
+      const stepKey = STEP_ORDER[i];
+      const check = canProceedFromStep(stepKey);
+      if (!check.allowed) {
+        showToast(check.reason || 'Please complete required fields before proceeding', 'warning');
+        if (check.unassignedPassenger) {
+          setActivePassengerIdState(check.unassignedPassenger.id);
+        }
+        // If the blocked step is ahead of current, jump to it so the user can fulfill it
+        if (i > currentIndex) {
+          setCurrentStepState(stepKey);
+        }
+        return false;
+      }
+    }
+
+    setCurrentStepState(targetStep);
+    return true;
+  };
+
+  const setCurrentStep = (step: StepKey) => {
+    goToStep(step);
+  };
+
   // Stepper navigation
   const nextStep = () => {
     const currentIndex = STEP_ORDER.indexOf(currentStep);
     if (currentIndex < STEP_ORDER.length - 1) {
-      setCurrentStep(STEP_ORDER[currentIndex + 1]);
+      goToStep(STEP_ORDER[currentIndex + 1]);
     }
   };
 
   const prevStep = () => {
     const currentIndex = STEP_ORDER.indexOf(currentStep);
     if (currentIndex > 0) {
-      setCurrentStep(STEP_ORDER[currentIndex - 1]);
+      setCurrentStepState(STEP_ORDER[currentIndex - 1]);
     }
   };
 
@@ -431,6 +553,9 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
         activeMealOption,
         toast,
         setCurrentStep,
+        goToStep,
+        canProceedFromStep,
+        canAccessStep,
         nextStep,
         prevStep,
         setPassengerCount,
@@ -442,6 +567,9 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
         updatePassengerName,
         removePassenger,
         resetBooking,
+        isBookingConfirmed,
+        confirmBooking,
+        dismissConfirmation,
         showToast,
         hideToast,
         passengerSummaries,

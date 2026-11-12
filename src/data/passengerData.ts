@@ -9,31 +9,31 @@ export const SAMPLE_PASSENGERS: Passenger[] = [
   },
   {
     id: 'pax-2',
-    name: 'Rahul Sharma',
+    name: 'Deepak Tiwari',
     code: 'PAX 2',
     avatarColor: '#059669', // Emerald
   },
   {
     id: 'pax-3',
-    name: 'Ananya Verma',
+    name: 'Bhoomi Jain',
     code: 'PAX 3',
     avatarColor: '#D97706', // Amber
   },
   {
     id: 'pax-4',
-    name: 'Aditi Singh',
+    name: 'Jayesh Rajesh Tamkar',
     code: 'PAX 4',
     avatarColor: '#7C3AED', // Purple
   },
   {
     id: 'pax-5',
-    name: 'Arjun Mehta',
+    name: 'Ankit Gupta',
     code: 'PAX 5',
     avatarColor: '#DB2777', // Pink
   },
   {
     id: 'pax-6',
-    name: 'Neha Gupta',
+    name: 'Anjali Bhujbal',
     code: 'PAX 6',
     avatarColor: '#0D9488', // Teal
   },

@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Check } from 'lucide-react-native';
+import { Check, Lock } from 'lucide-react-native';
 import { StepKey } from '../types';
+import { useBooking } from '../context/BookingContext';
 
 interface StepIndicatorProps {
   currentStep: StepKey;
@@ -17,6 +18,7 @@ const STEPS: { key: StepKey; label: string; number: number }[] = [
 ];
 
 export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, onSelectStep }) => {
+  const { canAccessStep } = useBooking();
   const currentIndex = STEPS.findIndex((s) => s.key === currentStep);
 
   return (
@@ -29,6 +31,7 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, onSel
         {STEPS.map((step, index) => {
           const isActive = step.key === currentStep;
           const isCompleted = index < currentIndex;
+          const isAccessible = isCompleted || isActive || canAccessStep(step.key).allowed;
 
           return (
             <TouchableOpacity
@@ -37,6 +40,7 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, onSel
                 styles.stepChip,
                 isActive && styles.stepChipActive,
                 isCompleted && styles.stepChipCompleted,
+                !isAccessible && styles.stepChipLocked,
               ]}
               onPress={() => onSelectStep(step.key)}
               activeOpacity={0.7}
@@ -46,10 +50,13 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, onSel
                   styles.circle,
                   isActive && styles.circleActive,
                   isCompleted && styles.circleCompleted,
+                  !isAccessible && styles.circleLocked,
                 ]}
               >
                 {isCompleted ? (
                   <Check size={10} color="#FFFFFF" strokeWidth={3} />
+                ) : !isAccessible ? (
+                  <Lock size={8} color="#94A3B8" />
                 ) : (
                   <Text style={[styles.circleNum, isActive && styles.circleNumActive]}>
                     {step.number}
@@ -62,6 +69,7 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, onSel
                   styles.chipLabel,
                   isActive && styles.chipLabelActive,
                   isCompleted && styles.chipLabelCompleted,
+                  !isAccessible && styles.chipLabelLocked,
                 ]}
               >
                 {step.label}
@@ -105,6 +113,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     borderColor: '#CBD5E1',
   },
+  stepChipLocked: {
+    opacity: 0.65,
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+  },
   circle: {
     width: 16,
     height: 16,
@@ -119,6 +132,11 @@ const styles = StyleSheet.create({
   },
   circleCompleted: {
     backgroundColor: '#059669',
+  },
+  circleLocked: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   circleNum: {
     fontSize: 9,
@@ -139,5 +157,8 @@ const styles = StyleSheet.create({
   },
   chipLabelCompleted: {
     color: '#334155',
+  },
+  chipLabelLocked: {
+    color: '#94A3B8',
   },
 });

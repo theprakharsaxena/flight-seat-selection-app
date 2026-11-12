@@ -13,11 +13,11 @@ describe('Flight Booking & Seat Selection Engine', () => {
     test('contains 6 predefined mock passengers', () => {
       expect(SAMPLE_PASSENGERS.length).toBe(6);
       expect(SAMPLE_PASSENGERS[0].name).toBe('Prakhar Saxena');
-      expect(SAMPLE_PASSENGERS[1].name).toBe('Rahul Sharma');
-      expect(SAMPLE_PASSENGERS[2].name).toBe('Ananya Verma');
-      expect(SAMPLE_PASSENGERS[3].name).toBe('Aditi Singh');
-      expect(SAMPLE_PASSENGERS[4].name).toBe('Arjun Mehta');
-      expect(SAMPLE_PASSENGERS[5].name).toBe('Neha Gupta');
+      expect(SAMPLE_PASSENGERS[1].name).toBe('Deepak Tiwari');
+      expect(SAMPLE_PASSENGERS[2].name).toBe('Bhoomi Jain');
+      expect(SAMPLE_PASSENGERS[3].name).toBe('Jayesh Rajesh Tamkar');
+      expect(SAMPLE_PASSENGERS[4].name).toBe('Ankit Gupta');
+      expect(SAMPLE_PASSENGERS[5].name).toBe('Anjali Bhujbal');
     });
 
     test('passenger slicing supports 1 to 6 passengers', () => {
@@ -202,6 +202,132 @@ describe('Flight Booking & Seat Selection Engine', () => {
       expect(totalSeats).toBe(350); // 0 + 350
       expect(totalMeals).toBe(350); // 150 + 200
       expect(totalSeats + totalMeals).toBe(700);
+    });
+  });
+
+  describe('Navigation Gating & Screen Prerequisite Validation', () => {
+    const STEP_ORDER = ['flight', 'passengers', 'seats', 'meals', 'summary'];
+
+    const evaluateCanProceed = (
+      step: string,
+      passengers: typeof SAMPLE_PASSENGERS,
+      activeLayout: '3-2' | '2-3-2',
+      seatAssignments: Record<'3-2' | '2-3-2', Record<string, string>>,
+      mealSelections: Record<string, string>
+    ) => {
+      switch (step) {
+        case 'flight':
+          return { allowed: true };
+        case 'passengers': {
+          if (passengers.length < 1) return { allowed: false, reason: 'Please select at least 1 traveler' };
+          const empty = passengers.find((p) => !p.name || p.name.trim().length === 0);
+          if (empty) return { allowed: false, reason: 'Please ensure all travelers have valid names' };
+          return { allowed: true };
+        }
+        case 'seats': {
+          const assignments = seatAssignments[activeLayout];
+          const unassigned = passengers.find((p) => !assignments[p.id]);
+          if (unassigned) {
+            const assignedCount = passengers.filter((p) => Boolean(assignments[p.id])).length;
+            return {
+              allowed: false,
+              reason: `Please select a seat for ${unassigned.name} (${assignedCount}/${passengers.length} assigned)`,
+              unassignedPassenger: unassigned,
+            };
+          }
+          return { allowed: true };
+        }
+        case 'meals': {
+          const missing = passengers.find((p) => !mealSelections[p.id]);
+          if (missing) return { allowed: false, reason: `Please select a meal preference for ${missing.name}` };
+          return { allowed: true };
+        }
+        case 'summary':
+          return { allowed: true };
+        default:
+          return { allowed: true };
+      }
+    };
+
+    const evaluateCanAccessStep = (
+      targetStep: string,
+      passengers: typeof SAMPLE_PASSENGERS,
+      activeLayout: '3-2' | '2-3-2',
+      seatAssignments: Record<'3-2' | '2-3-2', Record<string, string>>,
+      mealSelections: Record<string, string>
+    ) => {
+      const targetIndex = STEP_ORDER.indexOf(targetStep);
+      if (targetIndex <= 0) return { allowed: true };
+
+      for (let i = 0; i < targetIndex; i++) {
+        const stepKey = STEP_ORDER[i];
+        const check = evaluateCanProceed(stepKey, passengers, activeLayout, seatAssignments, mealSelections);
+        if (!check.allowed) {
+          return { allowed: false, blockedStep: stepKey, reason: check.reason };
+        }
+      }
+      return { allowed: true };
+    };
+
+    test('blocks advancing from seats when not all travelers have assigned seats', () => {
+      const passengers = SAMPLE_PASSENGERS.slice(0, 2); // 2 travelers: Prakhar and Deepak
+      const seatAssignments = {
+        '3-2': { 'pax-1': '1A' }, // only Prakhar has seat, Deepak has none
+        '2-3-2': {},
+      };
+      const mealSelections = { 'pax-1': 'meal-none', 'pax-2': 'meal-none' };
+
+      const check = evaluateCanProceed('seats', passengers, '3-2', seatAssignments, mealSelections);
+      expect(check.allowed).toBe(false);
+      expect(check.reason).toContain('Deepak Tiwari (1/2 assigned)');
+      expect(check.unassignedPassenger?.name).toBe('Deepak Tiwari');
+    });
+
+    test('permits advancing from seats once all travelers have assigned seats', () => {
+      const passengers = SAMPLE_PASSENGERS.slice(0, 2);
+      const seatAssignments = {
+        '3-2': { 'pax-1': '1A', 'pax-2': '1C' },
+        '2-3-2': {},
+      };
+      const mealSelections = { 'pax-1': 'meal-none', 'pax-2': 'meal-none' };
+
+      const check = evaluateCanProceed('seats', passengers, '3-2', seatAssignments, mealSelections);
+      expect(check.allowed).toBe(true);
+    });
+
+    test('blocks proceeding if user switches layout and current active layout has unassigned seats', () => {
+      const passengers = SAMPLE_PASSENGERS.slice(0, 2);
+      // User assigned seats in 3-2, but activeLayout is 2-3-2 which is empty
+      const seatAssignments = {
+        '3-2': { 'pax-1': '1A', 'pax-2': '1C' },
+        '2-3-2': {},
+      };
+      const mealSelections = { 'pax-1': 'meal-none', 'pax-2': 'meal-none' };
+
+      const check = evaluateCanProceed('seats', passengers, '2-3-2', seatAssignments, mealSelections);
+      expect(check.allowed).toBe(false);
+      expect(check.unassignedPassenger?.id).toBe('pax-1');
+    });
+
+    test('blocks jumping forward to summary when seats are not completed', () => {
+      const passengers = SAMPLE_PASSENGERS.slice(0, 2);
+      const seatAssignments = {
+        '3-2': { 'pax-1': '1A' }, // Rahul missing seat
+        '2-3-2': {},
+      };
+      const mealSelections = { 'pax-1': 'meal-none', 'pax-2': 'meal-none' };
+
+      const accessCheck = evaluateCanAccessStep('summary', passengers, '3-2', seatAssignments, mealSelections);
+      expect(accessCheck.allowed).toBe(false);
+      expect(accessCheck.blockedStep).toBe('seats');
+    });
+
+    test('allows going backward freely to any earlier screen', () => {
+      const currentStepIndex = STEP_ORDER.indexOf('seats'); // index 2
+      const targetStepIndex = STEP_ORDER.indexOf('passengers'); // index 1
+      const isBackward = targetStepIndex < currentStepIndex;
+
+      expect(isBackward).toBe(true);
     });
   });
 });

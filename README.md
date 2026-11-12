@@ -18,7 +18,7 @@ This mobile application provides an end-to-end flight seat selection and passeng
 - **Dynamic Passenger Management (1 to 6 Travelers)**:
   - Stepper controls and direct numerical selector.
   - Active passenger switching.
-  - Preloaded sample passenger records (`Prakhar Saxena`, `Rahul Sharma`, `Ananya Verma`, `Aditi Singh`, `Arjun Mehta`, `Neha Gupta`).
+  - Preloaded sample passenger records (`Prakhar Saxena`, `Deepak Tiwari`, `Bhoomi Jain`, `Jayesh Rajesh Tamkar`, `Ankit Gupta`, `Anjali Bhujbal`).
   - Automatic seat release and meal reset when reducing passenger count.
 - **Dual Aircraft Seating Configurations**:
   - **3–2 Single Aisle Layout**: A B C | D E (5 seats per row, 14 rows).

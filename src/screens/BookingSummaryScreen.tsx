@@ -21,18 +21,20 @@ export const BookingSummaryScreen: React.FC = () => {
     totalAmount,
     setCurrentStep,
     resetBooking,
+    isBookingConfirmed,
+    confirmBooking,
+    dismissConfirmation,
   } = useBooking();
 
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const { flight, activeLayout, passengerCount } = state;
   const layoutTitle = activeLayout === '3-2' ? '3–2 Single Aisle' : '2–3–2 Wide-Body';
 
   const handleFinishBooking = () => {
-    setShowConfirmModal(true);
+    confirmBooking();
   };
 
   const handleResetAll = () => {
-    setShowConfirmModal(false);
+    dismissConfirmation();
     resetBooking();
   };
 
@@ -199,10 +201,10 @@ export const BookingSummaryScreen: React.FC = () => {
 
       {/* Confirmation Modal */}
       <Modal
-        visible={showConfirmModal}
+        visible={isBookingConfirmed}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowConfirmModal(false)}
+        onRequestClose={dismissConfirmation}
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>

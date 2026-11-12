@@ -22,11 +22,13 @@ export const BottomBar: React.FC<BottomBarProps> = ({
     totalMealCharges,
     validPassengers,
     state,
+    confirmBooking,
   } = useBooking();
 
   const activeSeats = state.seatAssignments[state.activeLayout];
   const assignedSeatCount = validPassengers.filter((p) => Boolean(activeSeats[p.id])).length;
   const totalPax = validPassengers.length;
+  const isSeatIncomplete = currentStep === 'seats' && assignedSeatCount < totalPax;
 
   const getDefaultButtonLabel = () => {
     switch (currentStep) {
@@ -37,7 +39,7 @@ export const BottomBar: React.FC<BottomBarProps> = ({
       case 'seats':
         return assignedSeatCount === totalPax
           ? 'Continue to Meals'
-          : `Continue (${assignedSeatCount}/${totalPax} Seats)`;
+          : `Assign Seats (${assignedSeatCount}/${totalPax})`;
       case 'meals':
         return 'Review Booking';
       case 'summary':
@@ -50,6 +52,8 @@ export const BottomBar: React.FC<BottomBarProps> = ({
   const handlePrimaryPress = () => {
     if (onPressPrimary) {
       onPressPrimary();
+    } else if (currentStep === 'summary') {
+      confirmBooking();
     } else {
       nextStep();
     }
@@ -71,7 +75,7 @@ export const BottomBar: React.FC<BottomBarProps> = ({
 
         {/* Right Side: Primary CTA */}
         <TouchableOpacity
-          style={styles.actionBtn}
+          style={[styles.actionBtn, isSeatIncomplete && styles.actionBtnIncomplete]}
           onPress={handlePrimaryPress}
           activeOpacity={0.85}
         >
@@ -140,6 +144,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 10,
     minHeight: 44,
+  },
+  actionBtnIncomplete: {
+    backgroundColor: '#334155', // Slate indicator when action needs input
   },
   actionBtnText: {
     fontSize: 13,

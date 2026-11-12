@@ -15,7 +15,7 @@ import { MealSelectScreen } from './src/screens/MealSelectScreen';
 import { BookingSummaryScreen } from './src/screens/BookingSummaryScreen';
 
 const MainApp: React.FC = () => {
-  const { currentStep, setCurrentStep, toast, hideToast } = useBooking();
+  const { currentStep, goToStep, toast, hideToast } = useBooking();
 
   const renderCurrentScreen = () => {
     switch (currentStep) {
@@ -44,7 +44,7 @@ const MainApp: React.FC = () => {
       {/* Workflow Stepper */}
       <StepIndicator
         currentStep={currentStep}
-        onSelectStep={setCurrentStep}
+        onSelectStep={goToStep}
       />
 
       {/* Floating Action Feedback Toast */}
