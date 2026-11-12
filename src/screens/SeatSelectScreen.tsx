@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Trash2, User, Check, Layers } from 'lucide-react-native';
+import { Trash2, User, Check, Layers, Armchair } from 'lucide-react-native';
 import { useBooking } from '../context/BookingContext';
 import { SeatLegend } from '../components/SeatLegend';
 import { SeatMap } from '../components/SeatMap';
@@ -113,7 +113,7 @@ export const SeatSelectScreen: React.FC = () => {
                   </View>
                 ) : (
                   <View style={styles.seatUnassignedBadge}>
-                    <Text style={styles.seatUnassignedText}>—</Text>
+                    <Armchair size={10} color="#94A3B8" />
                   </View>
                 )}
               </TouchableOpacity>
@@ -284,17 +284,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   seatUnassignedBadge: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#E2E8F0',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  seatUnassignedText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#94A3B8',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   activeTravelerBanner: {
     flexDirection: 'row',

@@ -13,7 +13,9 @@ export const SeatLegend: React.FC = () => {
         {/* Free */}
         <View style={styles.legendItem}>
           <View style={[styles.sampleBox, styles.sampleFree]}>
-            <Text style={styles.sampleTextFree}>₹0</Text>
+            <Text style={styles.sampleTextFree} numberOfLines={1}>
+              ₹0
+            </Text>
           </View>
           <Text style={styles.legendLabel}>Standard (Free)</Text>
         </View>
@@ -21,7 +23,9 @@ export const SeatLegend: React.FC = () => {
         {/* Premium */}
         <View style={styles.legendItem}>
           <View style={[styles.sampleBox, styles.samplePremium]}>
-            <Text style={styles.sampleTextPremium}>₹250</Text>
+            <Text style={styles.sampleTextPremium} numberOfLines={1}>
+              ₹250
+            </Text>
           </View>
           <Text style={styles.legendLabel}>Premium</Text>
         </View>
@@ -29,14 +33,16 @@ export const SeatLegend: React.FC = () => {
         {/* Extra Legroom */}
         <View style={styles.legendItem}>
           <View style={[styles.sampleBox, styles.sampleLegroom]}>
-            <Text style={styles.sampleTextLegroom}>₹350</Text>
+            <Text style={styles.sampleTextLegroom} numberOfLines={1}>
+              ₹350
+            </Text>
           </View>
           <Text style={styles.legendLabel}>Extra Legroom</Text>
         </View>
 
         {/* Selected */}
         <View style={styles.legendItem}>
-          <View style={[styles.sampleBox, styles.sampleActive]}>
+          <View style={[styles.sampleBox, styles.sampleSquare, styles.sampleActive]}>
             <Check size={10} color="#FFFFFF" strokeWidth={3} />
           </View>
           <Text style={styles.legendLabel}>Selected</Text>
@@ -44,7 +50,7 @@ export const SeatLegend: React.FC = () => {
 
         {/* Assigned */}
         <View style={styles.legendItem}>
-          <View style={[styles.sampleBox, styles.sampleOther]}>
+          <View style={[styles.sampleBox, styles.sampleSquare, styles.sampleOther]}>
             <User size={10} color="#475569" strokeWidth={2.5} />
           </View>
           <Text style={styles.legendLabel}>Assigned</Text>
@@ -52,7 +58,7 @@ export const SeatLegend: React.FC = () => {
 
         {/* Occupied */}
         <View style={styles.legendItem}>
-          <View style={[styles.sampleBox, styles.sampleOccupied]}>
+          <View style={[styles.sampleBox, styles.sampleSquare, styles.sampleOccupied]}>
             <X size={10} color="#94A3B8" strokeWidth={2.5} />
           </View>
           <Text style={styles.legendLabel}>Occupied</Text>
@@ -80,21 +86,28 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   sampleBox: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
+    minWidth: 28,
+    height: 19,
+    paddingHorizontal: 4,
+    borderRadius: 4,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 5,
+    marginRight: 6,
+  },
+  sampleSquare: {
+    minWidth: 19,
+    width: 19,
+    paddingHorizontal: 0,
   },
   sampleFree: {
     backgroundColor: '#FFFFFF',
     borderColor: '#94A3B8',
+    minWidth: 22,
   },
   sampleTextFree: {
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#334155',
   },
   samplePremium: {
@@ -102,7 +115,7 @@ const styles = StyleSheet.create({
     borderColor: '#7C3AED',
   },
   sampleTextPremium: {
-    fontSize: 7,
+    fontSize: 8,
     fontWeight: '800',
     color: '#7C3AED',
   },
@@ -111,7 +124,7 @@ const styles = StyleSheet.create({
     borderColor: '#D97706',
   },
   sampleTextLegroom: {
-    fontSize: 7,
+    fontSize: 8,
     fontWeight: '800',
     color: '#B45309',
   },
