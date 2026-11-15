@@ -40,10 +40,10 @@ describe('Flight Booking & Seat Selection Engine', () => {
     });
 
     test('Layout 2-3-2 structure has correct columns and row count', () => {
-      expect(LAYOUT_2_3_2_CONFIG.columns).toEqual(['A', 'B', 'C', 'D', 'E', 'F', 'G']);
+      expect(LAYOUT_2_3_2_CONFIG.columns).toEqual(['A', 'B', 'D', 'E', 'F', 'G', 'H']);
       expect(LAYOUT_2_3_2_CONFIG.leftGroup).toEqual(['A', 'B']);
-      expect(LAYOUT_2_3_2_CONFIG.middleGroup).toEqual(['C', 'D', 'E']);
-      expect(LAYOUT_2_3_2_CONFIG.rightGroup).toEqual(['F', 'G']);
+      expect(LAYOUT_2_3_2_CONFIG.middleGroup).toEqual(['D', 'E', 'F']);
+      expect(LAYOUT_2_3_2_CONFIG.rightGroup).toEqual(['G', 'H']);
       expect(LAYOUT_2_3_2_CONFIG.totalRows).toBeGreaterThanOrEqual(12);
 
       const seatMap2_3_2 = SEAT_MAP_BY_LAYOUT['2-3-2'];

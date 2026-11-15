@@ -25,15 +25,15 @@ export const LAYOUT_3_2_CONFIG = {
   wingRows: [7, 8, 9],
 };
 
-// Layout 2: 2-3-2 structure (A B | C D E | F G)
+// Layout 2: 2-3-2 structure (A B | D E F | G H)
 export const LAYOUT_2_3_2_CONFIG = {
   id: '2-3-2' as CabinLayoutType,
   name: '2–3–2 Twin Aisle',
   subtitle: 'Wide-Body Jet (7 seats per row)',
-  columns: ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+  columns: ['A', 'B', 'D', 'E', 'F', 'G', 'H'],
   leftGroup: ['A', 'B'],
-  middleGroup: ['C', 'D', 'E'],
-  rightGroup: ['F', 'G'],
+  middleGroup: ['D', 'E', 'F'],
+  rightGroup: ['G', 'H'],
   totalRows: 14,
   exitRows: [10],
   wingRows: [7, 8, 9],
@@ -59,8 +59,8 @@ const OCCUPIED_SEATS_3_2 = new Set([
 ]);
 
 const OCCUPIED_SEATS_2_3_2 = new Set([
-  '1B', '2D', '3A', '3G', '4C', '4E', '5B', '6F', '7A',
-  '7D', '8C', '8G', '9E', '10B', '10F', '11C', '12A', '12G', '13D', '14F'
+  '1B', '2D', '3A', '3G', '4E', '4H', '5B', '6F', '7A',
+  '7D', '8G', '8H', '9E', '10B', '10F', '11H', '12A', '12G', '13D', '14F'
 ]);
 
 function determineCategory(row: number, col: string): { category: SeatCategory; price: number } {
@@ -76,7 +76,7 @@ function determineCategory(row: number, col: string): { category: SeatCategory; 
 
   // Row 1 & 2 front bulkhead
   if (row <= 2) {
-    if (col === 'C' || col === 'D') {
+    if (col === 'C' || col === 'D' || col === 'E') {
       return { category: 'premium', price: 250 };
     }
     return { category: 'standard', price: 0 };
@@ -88,7 +88,7 @@ function determineCategory(row: number, col: string): { category: SeatCategory; 
   }
 
   // Aisle and window seats in rows 5-6 have premium option
-  if ((row === 5 || row === 6) && (col === 'A' || col === 'C' || col === 'D' || col === 'G')) {
+  if ((row === 5 || row === 6) && (col === 'A' || col === 'D' || col === 'G' || col === 'H')) {
     return { category: 'premium', price: 250 };
   }
 
@@ -138,9 +138,9 @@ export function generateSeatsFor2_3_2(): SeatDefinition[] {
       const isOccupied = OCCUPIED_SEATS_2_3_2.has(id);
 
       const features: string[] = [];
-      if (c === 'A' || c === 'G') features.push('Window');
-      if (c === 'B' || c === 'C' || c === 'E' || c === 'F') features.push('Aisle');
-      if (c === 'D') features.push('Middle');
+      if (c === 'A' || c === 'H') features.push('Window');
+      if (c === 'B' || c === 'D' || c === 'F' || c === 'G') features.push('Aisle');
+      if (c === 'E') features.push('Middle');
       if (exitRows.includes(r)) features.push('Exit Row');
       if (category === 'extra_legroom') features.push('Extra Legroom');
 

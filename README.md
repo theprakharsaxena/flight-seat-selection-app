@@ -22,7 +22,7 @@ This mobile application provides an end-to-end flight seat selection and passeng
   - Automatic seat release and meal reset when reducing passenger count.
 - **Dual Aircraft Seating Configurations**:
   - **3–2 Single Aisle Layout**: A B C | D E (5 seats per row, 14 rows).
-  - **2–3–2 Twin Aisle Layout**: A B | C D E | F G (7 seats per row, 14 rows).
+  - **2–3–2 Twin Aisle Layout**: A B | D E F | G H (7 seats per row, 14 rows).
   - **Layout Independence**: Switching configurations preserves independent seat allocations for each layout separately.
 - **Multi-State Seat Model**:
   - `Available (Paid)`: Selectable seat with explicit category/price tag.
