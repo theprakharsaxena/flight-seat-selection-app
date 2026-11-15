@@ -254,14 +254,7 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
     const msg = `Assigned ${seatId} (${seat.category === 'extra_legroom' ? 'Extra Legroom' : seat.category === 'premium' ? 'Premium' : 'Standard'} • ${priceText}) to ${activePassenger.name}`;
     showToast(msg, 'success');
 
-    // Auto-advance to next passenger if more passengers still need seats
-    const nextUnassignedPax = validPassengers.find(
-      (p) => p.id !== activePassenger.id && !seatAssignments[activeLayout][p.id]
-    );
-    if (nextUnassignedPax) {
-      setActivePassengerIdState(nextUnassignedPax.id);
-    }
-
+    // Keep the active passenger selected (manual passenger switching via tabs only, matching meal selection)
     return { success: true, message: msg };
   };
 
