@@ -1,6 +1,12 @@
 # Flight Seat Selection & Passenger Management App
 
-A production-quality React Native mobile application for flight seat selection, passenger roster management, meal preference ordering, and dynamic price calculation. Built with React Native, TypeScript, and Expo.
+A production-quality React Native application for flight seat selection, passenger roster management, meal preference ordering, and dynamic price calculation. Built with React Native, TypeScript, and Expo.
+
+- **Live Web Deployment**: [https://flight-seat-selection-app.vercel.app/](https://flight-seat-selection-app.vercel.app/)
+- **GitHub Repository**: [https://github.com/theprakharsaxena/flight-seat-selection-app](https://github.com/theprakharsaxena/flight-seat-selection-app)
+- **Video Walkthroughs**:
+  - **Part 1: Live App & Feature Demo**: [Google Drive Video Link](https://drive.google.com/file/d/1iQNhIYsGx3O_ZoPaNuigwOMRqmaelSFi/view?usp=sharing)
+  - **Part 2: Code Architecture & Unit Tests Walkthrough**: [Google Drive Video Link](https://drive.google.com/file/d/165txjNd33ld7JglKDDk3RSydk7SYhhYz/view?usp=sharing)
 
 ---
 
