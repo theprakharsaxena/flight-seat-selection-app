@@ -239,7 +239,7 @@ export const BookingSummaryScreen: React.FC = () => {
             </View>
 
             <Text style={styles.modalFootnote}>
-              Mock technical assessment confirmation. No payment was charged.
+              Demo booking confirmation. No actual payment was charged.
             </Text>
 
             <TouchableOpacity

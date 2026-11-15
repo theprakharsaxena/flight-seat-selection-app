@@ -14,7 +14,7 @@ This mobile application provides an end-to-end flight seat selection and passeng
 
 ## 2. Key Features
 
-- **Neutral, Unbranded Airline UI**: Generic, realistic airline mobile interface without invented brand names or artificial AI design tropes.
+- **Clean Airline UI**: Focused, realistic airline booking interface with native mobile ergonomics, intuitive seat selection, and clear visual hierarchy.
 - **Dynamic Passenger Management (1 to 6 Travelers)**:
   - Stepper controls and direct numerical selector.
   - Active passenger switching.
@@ -155,12 +155,12 @@ The application state is managed by `BookingContext`:
    This ensures that selecting a seat in the 3–2 layout does not overwrite assignments in the 2–3–2 layout, satisfying the requirement for independent configuration states.
 
 2. **Passenger Count Pruning**:
-   When the passenger count decreases from $N$ to $M$ ($M < N$):
-   - Passengers with indices $\ge M$ are removed.
-   - Any seat assignments held by the removed passengers in **both** layouts are released immediately.
-   - Any meal selections chosen by the removed passengers are deleted.
-   - The total price is recalculated in the same render cycle.
-   - If the active passenger was among the removed travelers, the active pointer safely falls back to `pax-1`.
+   When the passenger count is reduced:
+   - Extra travelers are removed from the active roster.
+   - Any seat assignments held by removed passengers in **both** layouts are released immediately.
+   - Any meal selections chosen by removed passengers are cleared.
+   - Total pricing updates immediately in the same render cycle.
+   - If the active selected passenger was among the removed travelers, focus safely falls back to the first traveler.
 
 3. **Seat Assignment Conflict Prevention**:
    - Occupied seats (`isOccupied: true`) are disabled and cannot be pressed.
@@ -168,9 +168,12 @@ The application state is managed by `BookingContext`:
    - Selecting a new seat for the active passenger replaces their previous seat.
    - Tapping the currently selected seat removes/unassigns it.
 
-4. **Pricing Calculation Formula**:
-   $$\text{Total Amount} = \sum_{p \in \text{Passengers}} \text{Price}(\text{Seat}_{p, \text{activeLayout}}) + \sum_{p \in \text{Passengers}} \text{Price}(\text{Meal}_p)$$
-   Pricing is always computed dynamically from state; values are never hardcoded.
+4. **Pricing Calculation**:
+   - Total amount is computed dynamically:
+   ```typescript
+   Total Amount = sum(Seat Prices of all passengers) + sum(Meal Prices of all passengers)
+   ```
+   - Pricing updates immediately whenever a seat or meal is selected, changed, or removed.
 
 ---
 

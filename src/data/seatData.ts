@@ -39,7 +39,7 @@ export const LAYOUT_2_3_2_CONFIG = {
   wingRows: [7, 8, 9],
 };
 
-// Specific sample seats from master prompt:
+// Initial seat pricing and category overrides:
 // 1A: Standard ₹0, 1B: Standard ₹0, 1C: Extra Legroom ₹350, 1D: Standard ₹0, 1E: Premium ₹250
 // 2A: Extra Legroom ₹350, 2B: Standard ₹0
 const SPECIFIC_SEAT_OVERRIDES: Record<string, { category: SeatCategory; price: number }> = {
