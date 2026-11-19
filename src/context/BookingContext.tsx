@@ -1,34 +1,54 @@
-import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
+import React, { ReactNode, useCallback } from 'react';
+import { Provider as ReduxProvider } from 'react-redux';
 import {
   BookingState,
   CabinLayoutType,
-  FlightInfo,
   MealOption,
   Passenger,
   SeatDefinition,
   StepKey,
 } from '../types';
 import { MOCK_FLIGHT } from '../data/flightData';
-import { SAMPLE_PASSENGERS } from '../data/passengerData';
-import { MEAL_OPTIONS } from '../data/mealData';
 import { SEAT_MAP_BY_LAYOUT } from '../data/seatData';
+import {
+  store,
+  useAppDispatch,
+  useAppSelector,
+  selectBookingState,
+  selectValidPassengers,
+  selectActivePassenger,
+  selectActiveMealOption,
+  selectPassengerSummaries,
+  selectTotalSeatCharges,
+  selectTotalMealCharges,
+  selectTotalAmount,
+  getSeatForPassengerHelper,
+  getPassengerForSeatHelper,
+  checkCanProceedFromStep,
+  checkCanAccessStep,
+  STEP_ORDER,
+  setPassengerCount as setPassengerCountAction,
+  setActivePassengerId as setActivePassengerIdAction,
+  setActiveLayout as setActiveLayoutAction,
+  setCurrentStep as setCurrentStepAction,
+  assignSeatDirect,
+  removeSeatDirect,
+  selectMeal as selectMealAction,
+  updatePassengerName as updatePassengerNameAction,
+  removePassenger as removePassengerAction,
+  resetBooking as resetBookingAction,
+  confirmBooking as confirmBookingAction,
+  dismissConfirmation as dismissConfirmationAction,
+  showToast as showToastAction,
+  hideToast as hideToastAction,
+  hydrateState,
+  rehydrateNativeState,
+} from '../store';
+import { ToastState, PassengerSummary } from '../store/types';
 
-export interface PassengerSummary {
-  passenger: Passenger;
-  seat: SeatDefinition | null;
-  seatPrice: number;
-  meal: MealOption;
-  mealPrice: number;
-  totalPassengerCost: number;
-}
+export { ToastState, PassengerSummary };
 
-export interface ToastState {
-  message: string;
-  type: 'info' | 'success' | 'warning';
-  id: number;
-}
-
-interface BookingContextType {
+export interface BookingContextType {
   // State
   state: BookingState;
   currentStep: StepKey;
@@ -68,460 +88,302 @@ interface BookingContextType {
   getPassengerForSeat: (seatId: string, layout?: CabinLayoutType) => Passenger | null;
 }
 
-const STEP_ORDER: StepKey[] = ['flight', 'passengers', 'seats', 'meals', 'summary'];
+const PersistenceInitializer: React.FC = () => {
+  const dispatch = useAppDispatch();
+  React.useEffect(() => {
+    rehydrateNativeState(dispatch, hydrateState);
+  }, [dispatch]);
+  return null;
+};
 
-const BookingContext = createContext<BookingContextType | undefined>(undefined);
-
+/**
+ * BookingProvider wraps the application in the Redux Toolkit Provider.
+ */
 export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [passengerCount, setPassengerCountState] = useState<number>(2);
-  const [passengersList, setPassengersList] = useState<Passenger[]>(SAMPLE_PASSENGERS);
-  const [activePassengerId, setActivePassengerIdState] = useState<string>('pax-1');
-  const [activeLayout, setActiveLayoutState] = useState<CabinLayoutType>('3-2');
-  const [currentStep, setCurrentStepState] = useState<StepKey>('flight');
-  const [toast, setToast] = useState<ToastState | null>(null);
-  const [isBookingConfirmed, setIsBookingConfirmed] = useState<boolean>(false);
+  return (
+    <ReduxProvider store={store}>
+      <PersistenceInitializer />
+      {children}
+    </ReduxProvider>
+  );
+};
 
-  const confirmBooking = () => {
-    setIsBookingConfirmed(true);
-    showToast('Seat selection confirmed successfully!', 'success');
-  };
+/**
+ * useBooking hook connects components to the Redux Toolkit store.
+ */
+export const useBooking = (): BookingContextType => {
+  const dispatch = useAppDispatch();
 
-  const dismissConfirmation = () => {
-    setIsBookingConfirmed(false);
-  };
+  // Redux Selectors
+  const booking = useAppSelector(selectBookingState);
+  const validPassengers = useAppSelector(selectValidPassengers);
+  const activePassenger = useAppSelector(selectActivePassenger);
+  const activeMealOption = useAppSelector(selectActiveMealOption);
+  const passengerSummaries = useAppSelector(selectPassengerSummaries);
+  const totalSeatCharges = useAppSelector(selectTotalSeatCharges);
+  const totalMealCharges = useAppSelector(selectTotalMealCharges);
+  const totalAmount = useAppSelector(selectTotalAmount);
 
-  // Independent seat assignments for each layout
-  const [seatAssignments, setSeatAssignments] = useState<{
-    '3-2': Record<string, string>;
-    '2-3-2': Record<string, string>;
-  }>({
-    '3-2': {},
-    '2-3-2': {},
-  });
+  const {
+    currentStep,
+    toast,
+    isBookingConfirmed,
+    passengerCount,
+    activePassengerId,
+    activeLayout,
+    seatAssignments,
+    mealSelections,
+  } = booking;
 
-  // Meal selections: passengerId -> mealId (defaults to 'meal-none')
-  const [mealSelections, setMealSelections] = useState<Record<string, string>>({
-    'pax-1': 'meal-none',
-    'pax-2': 'meal-none',
-  });
+  // Dispatch Actions
+  const showToast = useCallback(
+    (message: string, type: 'info' | 'success' | 'warning' = 'info') => {
+      dispatch(showToastAction({ message, type }));
+    },
+    [dispatch]
+  );
 
-  const validPassengers = useMemo(() => {
-    return passengersList.slice(0, passengerCount);
-  }, [passengersList, passengerCount]);
+  const hideToast = useCallback(() => {
+    dispatch(hideToastAction());
+  }, [dispatch]);
 
-  const activePassenger = useMemo(() => {
-    const found = validPassengers.find((p) => p.id === activePassengerId);
-    return found || validPassengers[0];
-  }, [validPassengers, activePassengerId]);
+  const setPassengerCount = useCallback(
+    (count: number) => {
+      dispatch(setPassengerCountAction(count));
+    },
+    [dispatch]
+  );
 
-  const showToast = (message: string, type: 'info' | 'success' | 'warning' = 'info') => {
-    setToast({ message, type, id: Date.now() });
-  };
+  const setActivePassengerId = useCallback(
+    (id: string) => {
+      dispatch(setActivePassengerIdAction(id));
+    },
+    [dispatch]
+  );
 
-  const hideToast = () => {
-    setToast(null);
-  };
+  const setActiveLayout = useCallback(
+    (layout: CabinLayoutType) => {
+      dispatch(setActiveLayoutAction(layout));
+    },
+    [dispatch]
+  );
 
-  const setPassengerCount = (newCount: number) => {
-    if (newCount < 1 || newCount > 6) return;
-    
-    // When count reduces: clear assignments and meals of removed passengers
-    const keptPassengerIds = new Set(SAMPLE_PASSENGERS.slice(0, newCount).map((p) => p.id));
+  const selectMeal = useCallback(
+    (mealId: string, passengerId?: string) => {
+      dispatch(selectMealAction({ mealId, passengerId }));
+    },
+    [dispatch]
+  );
 
-    setSeatAssignments((prev) => {
-      const clean3_2: Record<string, string> = {};
-      const clean2_3_2: Record<string, string> = {};
+  const updatePassengerName = useCallback(
+    (passengerId: string, newName: string) => {
+      dispatch(updatePassengerNameAction({ passengerId, newName }));
+    },
+    [dispatch]
+  );
 
-      Object.entries(prev['3-2']).forEach(([paxId, seatId]) => {
-        if (keptPassengerIds.has(paxId)) clean3_2[paxId] = seatId;
-      });
+  const removePassenger = useCallback(
+    (passengerId: string) => {
+      dispatch(removePassengerAction(passengerId));
+    },
+    [dispatch]
+  );
 
-      Object.entries(prev['2-3-2']).forEach(([paxId, seatId]) => {
-        if (keptPassengerIds.has(paxId)) clean2_3_2[paxId] = seatId;
-      });
+  const resetBooking = useCallback(() => {
+    dispatch(resetBookingAction());
+  }, [dispatch]);
 
-      return {
-        '3-2': clean3_2,
-        '2-3-2': clean2_3_2,
-      };
-    });
+  const confirmBooking = useCallback(() => {
+    dispatch(confirmBookingAction());
+  }, [dispatch]);
 
-    setMealSelections((prev) => {
-      const cleanMeals: Record<string, string> = {};
-      Object.entries(prev).forEach(([paxId, mealId]) => {
-        if (keptPassengerIds.has(paxId)) cleanMeals[paxId] = mealId;
-      });
-      // Initialize any newly added passengers with default 'meal-none'
-      keptPassengerIds.forEach((paxId) => {
-        if (!cleanMeals[paxId]) {
-          cleanMeals[paxId] = 'meal-none';
-        }
-      });
-      return cleanMeals;
-    });
+  const dismissConfirmation = useCallback(() => {
+    dispatch(dismissConfirmationAction());
+  }, [dispatch]);
 
-    // Reset active passenger if the previous one is no longer valid
-    if (!keptPassengerIds.has(activePassengerId)) {
-      setActivePassengerIdState('pax-1');
-    }
+  const removeSeat = useCallback(
+    (passengerId: string = activePassenger.id) => {
+      const seatId = seatAssignments[activeLayout][passengerId];
+      if (!seatId) return;
 
-    setPassengerCountState(newCount);
-    showToast(`Updated to ${newCount} passenger${newCount > 1 ? 's' : ''}`, 'info');
-  };
+      const pax = validPassengers.find((p) => p.id === passengerId);
+      dispatch(
+        removeSeatDirect({
+          passengerId,
+          layout: activeLayout,
+          message: `Cleared seat assignment for ${pax?.name || 'passenger'}`,
+        })
+      );
+    },
+    [dispatch, seatAssignments, activeLayout, activePassenger.id, validPassengers]
+  );
 
-  const setActivePassengerId = (id: string) => {
-    const exists = validPassengers.some((p) => p.id === id);
-    if (exists) {
-      setActivePassengerIdState(id);
-    }
-  };
+  const getSeatForPassenger = useCallback(
+    (passengerId: string, layout: CabinLayoutType = activeLayout): SeatDefinition | null => {
+      return getSeatForPassengerHelper(seatAssignments, passengerId, layout);
+    },
+    [seatAssignments, activeLayout]
+  );
 
-  const setActiveLayout = (layout: CabinLayoutType) => {
-    if (layout === activeLayout) return;
-    setActiveLayoutState(layout);
-    showToast(`Switched to ${layout === '3-2' ? '3–2 Single Aisle' : '2–3–2 Twin Aisle'}`, 'info');
-  };
+  const getPassengerForSeat = useCallback(
+    (seatId: string, layout: CabinLayoutType = activeLayout): Passenger | null => {
+      return getPassengerForSeatHelper(seatAssignments, booking.passengersList, seatId, layout);
+    },
+    [seatAssignments, booking.passengersList, activeLayout]
+  );
 
-  // Helper to get assigned seat for passenger in specified (or active) layout
-  const getSeatForPassenger = (passengerId: string, layout: CabinLayoutType = activeLayout): SeatDefinition | null => {
-    const seatId = seatAssignments[layout][passengerId];
-    if (!seatId) return null;
-    return SEAT_MAP_BY_LAYOUT[layout].get(seatId) || null;
-  };
+  const selectSeat = useCallback(
+    (seatId: string): { success: boolean; message: string } => {
+      const seatMap = SEAT_MAP_BY_LAYOUT[activeLayout];
+      const seat = seatMap.get(seatId);
 
-  // Helper to find which passenger holds a seat in specified (or active) layout
-  const getPassengerForSeat = (seatId: string, layout: CabinLayoutType = activeLayout): Passenger | null => {
-    const entries = Object.entries(seatAssignments[layout]);
-    const match = entries.find(([_, sId]) => sId === seatId);
-    if (!match) return null;
-    return SAMPLE_PASSENGERS.find((p) => p.id === match[0]) || null;
-  };
+      if (!seat) {
+        const msg = `Seat ${seatId} not found in this layout`;
+        showToast(msg, 'warning');
+        return { success: false, message: msg };
+      }
 
-  // Seat selection action
-  const selectSeat = (seatId: string): { success: boolean; message: string } => {
-    const seatMap = SEAT_MAP_BY_LAYOUT[activeLayout];
-    const seat = seatMap.get(seatId);
+      // Rule: occupied seats must never be selectable
+      if (seat.isOccupied) {
+        const msg = `Seat ${seatId} is already occupied on this flight`;
+        showToast(msg, 'warning');
+        return { success: false, message: msg };
+      }
 
-    if (!seat) {
-      const msg = `Seat ${seatId} not found in this layout`;
-      showToast(msg, 'warning');
-      return { success: false, message: msg };
-    }
+      const currentSeatOfActive = seatAssignments[activeLayout][activePassenger.id];
 
-    // Rule: occupied seats must never be selectable
-    if (seat.isOccupied) {
-      const msg = `Seat ${seatId} is already occupied on this flight`;
-      showToast(msg, 'warning');
-      return { success: false, message: msg };
-    }
+      // If tapping the already selected seat for active passenger, remove it
+      if (currentSeatOfActive === seatId) {
+        const msg = `Removed seat ${seatId} for ${activePassenger.name}`;
+        dispatch(
+          removeSeatDirect({
+            passengerId: activePassenger.id,
+            layout: activeLayout,
+            message: msg,
+          })
+        );
+        return { success: true, message: msg };
+      }
 
-    const currentSeatOfActive = seatAssignments[activeLayout][activePassenger.id];
+      // Rule: seat assigned to another passenger in current booking cannot be selected
+      const assignedOtherPax = getPassengerForSeat(seatId, activeLayout);
+      if (assignedOtherPax && assignedOtherPax.id !== activePassenger.id) {
+        const msg = `Seat ${seatId} is already assigned to ${assignedOtherPax.name}`;
+        showToast(msg, 'warning');
+        return { success: false, message: msg };
+      }
 
-    // If tapping the already selected seat for active passenger, remove it
-    if (currentSeatOfActive === seatId) {
-      setSeatAssignments((prev) => {
-        const updated = { ...prev[activeLayout] };
-        delete updated[activePassenger.id];
-        return {
-          ...prev,
-          [activeLayout]: updated,
-        };
-      });
-      const msg = `Removed seat ${seatId} for ${activePassenger.name}`;
-      showToast(msg, 'info');
+      // Assign seat to active passenger
+      const priceText = seat.price === 0 ? 'Free' : `₹${seat.price}`;
+      const categoryLabel =
+        seat.category === 'extra_legroom'
+          ? 'Extra Legroom'
+          : seat.category === 'premium'
+          ? 'Premium'
+          : 'Standard';
+      const msg = `Assigned ${seatId} (${categoryLabel} • ${priceText}) to ${activePassenger.name}`;
+
+      dispatch(
+        assignSeatDirect({
+          passengerId: activePassenger.id,
+          seatId,
+          layout: activeLayout,
+          message: msg,
+        })
+      );
+
+      // Keep the active passenger selected (manual passenger switching via tabs only)
       return { success: true, message: msg };
-    }
+    },
+    [activeLayout, seatAssignments, activePassenger, getPassengerForSeat, showToast, dispatch]
+  );
 
-    // Rule: seat assigned to another passenger in current booking cannot be selected
-    const assignedOtherPax = getPassengerForSeat(seatId, activeLayout);
-    if (assignedOtherPax && assignedOtherPax.id !== activePassenger.id) {
-      const msg = `Seat ${seatId} is already assigned to ${assignedOtherPax.name}`;
-      showToast(msg, 'warning');
-      return { success: false, message: msg };
-    }
+  const canProceedFromStep = useCallback(
+    (step: StepKey) => {
+      return checkCanProceedFromStep(
+        step,
+        validPassengers,
+        activeLayout,
+        seatAssignments,
+        mealSelections
+      );
+    },
+    [validPassengers, activeLayout, seatAssignments, mealSelections]
+  );
 
-    // Assign seat to active passenger (replaces previous seat if any)
-    setSeatAssignments((prev) => {
-      const updated = { ...prev[activeLayout] };
-      updated[activePassenger.id] = seatId;
-      return {
-        ...prev,
-        [activeLayout]: updated,
-      };
-    });
+  const canAccessStep = useCallback(
+    (targetStep: StepKey) => {
+      return checkCanAccessStep(
+        targetStep,
+        validPassengers,
+        activeLayout,
+        seatAssignments,
+        mealSelections
+      );
+    },
+    [validPassengers, activeLayout, seatAssignments, mealSelections]
+  );
 
-    const priceText = seat.price === 0 ? 'Free' : `₹${seat.price}`;
-    const msg = `Assigned ${seatId} (${seat.category === 'extra_legroom' ? 'Extra Legroom' : seat.category === 'premium' ? 'Premium' : 'Standard'} • ${priceText}) to ${activePassenger.name}`;
-    showToast(msg, 'success');
+  const goToStep = useCallback(
+    (targetStep: StepKey): boolean => {
+      if (targetStep === currentStep) return true;
 
-    // Keep the active passenger selected (manual passenger switching via tabs only, matching meal selection)
-    return { success: true, message: msg };
-  };
+      const currentIndex = STEP_ORDER.indexOf(currentStep);
+      const targetIndex = STEP_ORDER.indexOf(targetStep);
 
-  const removeSeat = (passengerId: string = activePassenger.id) => {
-    const seatId = seatAssignments[activeLayout][passengerId];
-    if (!seatId) return;
-
-    setSeatAssignments((prev) => {
-      const updated = { ...prev[activeLayout] };
-      delete updated[passengerId];
-      return {
-        ...prev,
-        [activeLayout]: updated,
-      };
-    });
-
-    const pax = validPassengers.find((p) => p.id === passengerId);
-    showToast(`Cleared seat assignment for ${pax?.name || 'passenger'}`, 'info');
-  };
-
-  // Meal selection action (manual passenger selection: does not auto-switch traveler)
-  const selectMeal = (mealId: string, passengerId: string = activePassenger.id) => {
-    const meal = MEAL_OPTIONS.find((m) => m.id === mealId) || MEAL_OPTIONS[0];
-
-    setMealSelections((prev) => ({
-      ...prev,
-      [passengerId]: mealId,
-    }));
-
-    const pax = validPassengers.find((p) => p.id === passengerId);
-    const priceText = meal.price === 0 ? 'Free' : `₹${meal.price}`;
-    showToast(`Selected ${meal.name} (${priceText}) for ${pax?.name || 'passenger'}`, 'success');
-  };
-
-  const updatePassengerName = (passengerId: string, newName: string) => {
-    const trimmed = newName.trim();
-    if (!trimmed) {
-      showToast('Passenger name cannot be empty', 'warning');
-      return;
-    }
-    setPassengersList((prev) =>
-      prev.map((p) => (p.id === passengerId ? { ...p, name: trimmed } : p))
-    );
-    showToast(`Updated name to ${trimmed}`, 'success');
-  };
-
-  const removePassenger = (passengerId: string) => {
-    if (passengerCount <= 1) {
-      showToast('At least 1 passenger is required for booking', 'warning');
-      return;
-    }
-
-    const paxToRemove = validPassengers.find((p) => p.id === passengerId);
-    const newCount = passengerCount - 1;
-
-    // Filter out the passenger and push to the end so roster stays 6 total
-    const remaining = passengersList.filter((p) => p.id !== passengerId);
-    if (paxToRemove) {
-      remaining.push(paxToRemove);
-    }
-
-    setPassengersList(remaining);
-    setPassengerCountState(newCount);
-
-    // Release seat assignments in both layouts
-    setSeatAssignments((prev) => {
-      const clean3_2 = { ...prev['3-2'] };
-      const clean2_3_2 = { ...prev['2-3-2'] };
-      delete clean3_2[passengerId];
-      delete clean2_3_2[passengerId];
-      return { '3-2': clean3_2, '2-3-2': clean2_3_2 };
-    });
-
-    // Release meal selection
-    setMealSelections((prev) => {
-      const cleanMeals = { ...prev };
-      delete cleanMeals[passengerId];
-      return cleanMeals;
-    });
-
-    // If active passenger was removed, reset active to first remaining
-    if (activePassengerId === passengerId) {
-      setActivePassengerIdState(remaining[0].id);
-    }
-
-    showToast(`Removed ${paxToRemove?.name || 'traveler'} from booking`, 'info');
-  };
-
-  const resetBooking = () => {
-    setIsBookingConfirmed(false);
-    setPassengersList(SAMPLE_PASSENGERS);
-    setPassengerCountState(2);
-    setActivePassengerIdState('pax-1');
-    setActiveLayoutState('3-2');
-    setCurrentStepState('flight');
-    setSeatAssignments({
-      '3-2': {},
-      '2-3-2': {},
-    });
-    setMealSelections({
-      'pax-1': 'meal-none',
-      'pax-2': 'meal-none',
-    });
-    showToast('Reset all selections to default', 'info');
-  };
-
-  const activeMealOption = useMemo(() => {
-    const mealId = mealSelections[activePassenger.id] || 'meal-none';
-    return MEAL_OPTIONS.find((m) => m.id === mealId) || MEAL_OPTIONS[0];
-  }, [mealSelections, activePassenger.id]);
-
-  // Passenger summaries with dynamic pricing
-  const passengerSummaries: PassengerSummary[] = useMemo(() => {
-    return validPassengers.map((passenger) => {
-      const seat = getSeatForPassenger(passenger.id, activeLayout);
-      const seatPrice = seat ? seat.price : 0;
-      const mealId = mealSelections[passenger.id] || 'meal-none';
-      const meal = MEAL_OPTIONS.find((m) => m.id === mealId) || MEAL_OPTIONS[0];
-      const mealPrice = meal.price;
-
-      return {
-        passenger,
-        seat,
-        seatPrice,
-        meal,
-        mealPrice,
-        totalPassengerCost: seatPrice + mealPrice,
-      };
-    });
-  }, [validPassengers, seatAssignments, activeLayout, mealSelections]);
-
-  const totalSeatCharges = useMemo(() => {
-    return passengerSummaries.reduce((sum, item) => sum + item.seatPrice, 0);
-  }, [passengerSummaries]);
-
-  const totalMealCharges = useMemo(() => {
-    return passengerSummaries.reduce((sum, item) => sum + item.mealPrice, 0);
-  }, [passengerSummaries]);
-
-  const totalAmount = useMemo(() => {
-    return totalSeatCharges + totalMealCharges;
-  }, [totalSeatCharges, totalMealCharges]);
-
-  // Step-by-step task validation
-  const canProceedFromStep = (
-    step: StepKey
-  ): { allowed: boolean; reason?: string; unassignedPassenger?: Passenger } => {
-    switch (step) {
-      case 'flight':
-        return { allowed: true };
-      case 'passengers': {
-        if (validPassengers.length < 1) {
-          return { allowed: false, reason: 'Please select at least 1 traveler' };
-        }
-        const emptyNamePax = validPassengers.find((p) => !p.name || p.name.trim().length === 0);
-        if (emptyNamePax) {
-          return { allowed: false, reason: 'Please ensure all travelers have valid names' };
-        }
-        return { allowed: true };
+      // Moving backward to earlier screens is always permitted
+      if (targetIndex < currentIndex) {
+        dispatch(setCurrentStepAction(targetStep));
+        return true;
       }
-      case 'seats': {
-        const currentAssignments = seatAssignments[activeLayout];
-        const unassigned = validPassengers.find((p) => !currentAssignments[p.id]);
-        if (unassigned) {
-          const assignedCount = validPassengers.filter((p) => Boolean(currentAssignments[p.id])).length;
-          return {
-            allowed: false,
-            reason: `Please select a seat for ${unassigned.name} (${assignedCount}/${validPassengers.length} assigned)`,
-            unassignedPassenger: unassigned,
-          };
+
+      // Moving forward: validate each intermediate step
+      for (let i = 0; i < targetIndex; i++) {
+        const stepKey = STEP_ORDER[i];
+        const check = canProceedFromStep(stepKey);
+        if (!check.allowed) {
+          showToast(check.reason || 'Please complete required fields before proceeding', 'warning');
+          if (check.unassignedPassenger) {
+            dispatch(setActivePassengerIdAction(check.unassignedPassenger.id));
+          }
+          if (i > currentIndex) {
+            dispatch(setCurrentStepAction(stepKey));
+          }
+          return false;
         }
-        return { allowed: true };
       }
-      case 'meals': {
-        const missingMealPax = validPassengers.find((p) => !mealSelections[p.id]);
-        if (missingMealPax) {
-          return {
-            allowed: false,
-            reason: `Please select a meal preference for ${missingMealPax.name}`,
-          };
-        }
-        return { allowed: true };
+
+      // Default to first traveler when entering meals
+      if (targetStep === 'meals' && validPassengers.length > 0) {
+        dispatch(setActivePassengerIdAction(validPassengers[0].id));
       }
-      case 'summary':
-        return { allowed: true };
-      default:
-        return { allowed: true };
-    }
-  };
 
-  const canAccessStep = (
-    targetStep: StepKey
-  ): { allowed: boolean; blockedStep?: StepKey; reason?: string } => {
-    const targetIndex = STEP_ORDER.indexOf(targetStep);
-    if (targetIndex <= 0) return { allowed: true };
-
-    for (let i = 0; i < targetIndex; i++) {
-      const stepKey = STEP_ORDER[i];
-      const check = canProceedFromStep(stepKey);
-      if (!check.allowed) {
-        return {
-          allowed: false,
-          blockedStep: stepKey,
-          reason: check.reason,
-        };
-      }
-    }
-    return { allowed: true };
-  };
-
-  // Safe navigation that blocks skipping steps if tasks are incomplete
-  const goToStep = (targetStep: StepKey): boolean => {
-    if (targetStep === currentStep) return true;
-
-    const currentIndex = STEP_ORDER.indexOf(currentStep);
-    const targetIndex = STEP_ORDER.indexOf(targetStep);
-
-    // Moving backward to earlier screens is always permitted
-    if (targetIndex < currentIndex) {
-      setCurrentStepState(targetStep);
+      dispatch(setCurrentStepAction(targetStep));
       return true;
-    }
+    },
+    [currentStep, canProceedFromStep, showToast, validPassengers, dispatch]
+  );
 
-    // Moving forward: validate each intermediate step
-    for (let i = 0; i < targetIndex; i++) {
-      const stepKey = STEP_ORDER[i];
-      const check = canProceedFromStep(stepKey);
-      if (!check.allowed) {
-        showToast(check.reason || 'Please complete required fields before proceeding', 'warning');
-        if (check.unassignedPassenger) {
-          setActivePassengerIdState(check.unassignedPassenger.id);
-        }
-        // If the blocked step is ahead of current, jump to it so the user can fulfill it
-        if (i > currentIndex) {
-          setCurrentStepState(stepKey);
-        }
-        return false;
-      }
-    }
+  const setCurrentStep = useCallback(
+    (step: StepKey) => {
+      goToStep(step);
+    },
+    [goToStep]
+  );
 
-    // When transitioning into meals section, default to the first passenger
-    if (targetStep === 'meals' && validPassengers.length > 0) {
-      setActivePassengerIdState(validPassengers[0].id);
-    }
-
-    setCurrentStepState(targetStep);
-    return true;
-  };
-
-  const setCurrentStep = (step: StepKey) => {
-    goToStep(step);
-  };
-
-  // Stepper navigation
-  const nextStep = () => {
+  const nextStep = useCallback(() => {
     const currentIndex = STEP_ORDER.indexOf(currentStep);
     if (currentIndex < STEP_ORDER.length - 1) {
       goToStep(STEP_ORDER[currentIndex + 1]);
     }
-  };
+  }, [currentStep, goToStep]);
 
-  const prevStep = () => {
+  const prevStep = useCallback(() => {
     const currentIndex = STEP_ORDER.indexOf(currentStep);
     if (currentIndex > 0) {
-      setCurrentStepState(STEP_ORDER[currentIndex - 1]);
+      dispatch(setCurrentStepAction(STEP_ORDER[currentIndex - 1]));
     }
-  };
+  }, [currentStep, dispatch]);
 
   const state: BookingState = {
     flight: MOCK_FLIGHT,
@@ -533,53 +395,38 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
     mealSelections,
   };
 
-  return (
-    <BookingContext.Provider
-      value={{
-        state,
-        currentStep,
-        activePassenger,
-        validPassengers,
-        activeMealOption,
-        toast,
-        setCurrentStep,
-        goToStep,
-        canProceedFromStep,
-        canAccessStep,
-        nextStep,
-        prevStep,
-        setPassengerCount,
-        setActivePassengerId,
-        setActiveLayout,
-        selectSeat,
-        removeSeat,
-        selectMeal,
-        updatePassengerName,
-        removePassenger,
-        resetBooking,
-        isBookingConfirmed,
-        confirmBooking,
-        dismissConfirmation,
-        showToast,
-        hideToast,
-        passengerSummaries,
-        totalSeatCharges,
-        totalMealCharges,
-        totalAmount,
-        getSeatForPassenger,
-        getPassengerForSeat,
-      }}
-    >
-      {children}
-    </BookingContext.Provider>
-  );
+  return {
+    state,
+    currentStep,
+    activePassenger,
+    validPassengers,
+    activeMealOption,
+    toast,
+    setCurrentStep,
+    goToStep,
+    canProceedFromStep,
+    canAccessStep,
+    nextStep,
+    prevStep,
+    setPassengerCount,
+    setActivePassengerId,
+    setActiveLayout,
+    selectSeat,
+    removeSeat,
+    selectMeal,
+    updatePassengerName,
+    removePassenger,
+    resetBooking,
+    isBookingConfirmed,
+    confirmBooking,
+    dismissConfirmation,
+    showToast,
+    hideToast,
+    passengerSummaries,
+    totalSeatCharges,
+    totalMealCharges,
+    totalAmount,
+    getSeatForPassenger,
+    getPassengerForSeat,
+  };
 };
-
-export const useBooking = (): BookingContextType => {
-  const context = useContext(BookingContext);
-  if (!context) {
-    throw new Error('useBooking must be used within a BookingProvider');
-  }
-  return context;
-};
-

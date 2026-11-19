@@ -60,7 +60,7 @@ This mobile application provides an end-to-end flight seat selection and passeng
 
 - **Framework**: React Native 0.88 with Expo SDK 58
 - **Language**: TypeScript (Strict typing)
-- **State Management**: React Context API (`BookingContext`) with single source of truth
+- **State Management**: Redux Toolkit (`@reduxjs/toolkit` & `react-redux`) with centralized store, slices, and memoized selectors
 - **Styling**: React Native `StyleSheet` with consistent design tokens
 - **Icons**: Lucide React Native (`lucide-react-native`, `react-native-svg`)
 - **Safe Area**: `react-native-safe-area-context`
